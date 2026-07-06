@@ -4,6 +4,7 @@
     "build:client": "deno run -A scripts/build-client.ts",
     "deploy": "deno install && deno task build:client && deno run -A npm:wrangler@latest deploy",
     "test": "deno test -A",
+    "lint": "deno lint && deno fmt --check",
     "check": "deno check src/index.tsx src/client/entry-client.tsx",
     "db:migrate:local": "deno run -A npm:wrangler@latest d1 migrations apply iuma-db --local",
     "db:migrate:remote": "deno run -A npm:wrangler@latest d1 migrations apply iuma-db --remote",
@@ -33,7 +34,11 @@
     "exclude": ["assets/client.js", "migrations/"]
   },
   "lint": {
-    "exclude": ["assets/client.js"]
+    "exclude": ["assets/client.js"],
+    "rules": {
+      "tags": ["recommended"],
+      "include": ["no-sloppy-imports", "no-slow-types"]
+    }
   },
   "nodeModulesDir": "auto"
 }
