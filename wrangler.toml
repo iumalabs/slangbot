@@ -36,7 +36,7 @@ crons = ["0 0 * * *"]
 # Cloudflare Turnstile *test* site key (always passes). Replace for production.
 TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
 # Your Cloudflare Zero Trust team domain, e.g. "myteam.cloudflareaccess.com".
-ACCESS_TEAM_DOMAIN = ""
+ACCESS_TEAM_DOMAIN = "yugai"
 # Feature flag for the Telegram autopost step ("true" to enable).
 TELEGRAM_ENABLED = "false"
 

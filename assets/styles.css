@@ -97,6 +97,34 @@ a:hover {
   backdrop-filter: blur(8px);
 }
 
+/* Small blurred waving Ukrainian flag in the topbar corner. */
+.ua-flag {
+  flex-shrink: 0;
+  width: 26px;
+  height: 16px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #0057b7 0% 50%, #ffd700 50% 100%);
+  filter: blur(2.5px);
+  transform-origin: left center;
+  animation: flag-wave 2.4s ease-in-out infinite;
+}
+
+@keyframes flag-wave {
+  0%,
+  100% {
+    transform: skewY(-4deg) scaleX(1);
+  }
+  25% {
+    transform: skewY(3deg) scaleX(0.95);
+  }
+  50% {
+    transform: skewY(-2deg) scaleX(1.03);
+  }
+  75% {
+    transform: skewY(4deg) scaleX(0.96);
+  }
+}
+
 .ticker {
   margin: 0;
   font-family: var(--font-mono);

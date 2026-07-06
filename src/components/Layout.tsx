@@ -88,6 +88,7 @@ export function Layout(props: LayoutProps) {
         <a className="skip-link" href="#main">{ui.skipToContent}</a>
         <div className="bg-glow" aria-hidden="true"></div>
         <header className="topbar">
+          <span className="ua-flag" aria-hidden="true"></span>
           <p className="ticker" aria-label="site status">
             {props.tickerDate
               ? (
