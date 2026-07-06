@@ -1,7 +1,7 @@
 {
   "tasks": {
     "dev": "deno run -A scripts/dev.ts",
-    "build:client": "deno run -A npm:esbuild@0.25.5 src/client/entry-client.tsx --bundle --format=esm --target=es2022 --jsx=automatic --minify --outfile=assets/client.js",
+    "build:client": "deno run -A scripts/build-client.ts",
     "deploy": "deno task build:client && deno run -A npm:wrangler@latest deploy",
     "test": "deno test -A",
     "check": "deno check src/index.tsx src/client/entry-client.tsx",
@@ -19,12 +19,14 @@
     "hono/": "npm:/hono@4.7.11/",
     "workers-og": "npm:workers-og@0.0.25",
     "@types/react": "npm:@types/react@18.3.12",
+    "esbuild": "npm:esbuild@0.25.5",
+    "@luca/esbuild-deno-loader": "jsr:@luca/esbuild-deno-loader@0.11.1",
     "@std/assert": "jsr:@std/assert@1"
   },
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "react",
-    "types": ["@types/react"],
+    "types": ["@types/react", "./src/cf-types.d.ts"],
     "lib": ["deno.ns", "dom", "dom.iterable", "esnext"]
   },
   "fmt": {

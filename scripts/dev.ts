@@ -5,18 +5,7 @@
 // so the daily pipeline can be triggered locally.
 
 const esbuild = new Deno.Command(Deno.execPath(), {
-  args: [
-    "run",
-    "-A",
-    "npm:esbuild@0.25.5",
-    "src/client/entry-client.tsx",
-    "--bundle",
-    "--format=esm",
-    "--target=es2022",
-    "--jsx=automatic",
-    "--outfile=assets/client.js",
-    "--watch",
-  ],
+  args: ["run", "-A", "scripts/build-client.ts", "--watch"],
   stdout: "inherit",
   stderr: "inherit",
 }).spawn();

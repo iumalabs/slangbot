@@ -38,7 +38,10 @@ export interface TrendSource {
 export const DEFAULT_SOURCES: TrendSource[] = [
   { type: "urban", url: "https://api.urbandictionary.com/v0/words_of_the_day" },
   { type: "urban", url: "https://api.urbandictionary.com/v0/random" },
-  { type: "reddit-rss", url: "https://www.reddit.com/r/OutOfTheLoop/.rss?limit=25" },
+  {
+    type: "reddit-rss",
+    url: "https://www.reddit.com/r/OutOfTheLoop/.rss?limit=25",
+  },
   { type: "reddit-rss", url: "https://www.reddit.com/r/slang/.rss?limit=25" },
   { type: "rss", url: "https://knowyourmeme.com/newsfeed.rss" },
 ];
@@ -54,7 +57,9 @@ export async function getSources(kv: KVNamespace): Promise<TrendSource[]> {
   if (!raw) return DEFAULT_SOURCES;
   try {
     const parsed = JSON.parse(raw) as TrendSource[];
-    return Array.isArray(parsed) ? parsed.filter((s) => s?.url) : DEFAULT_SOURCES;
+    return Array.isArray(parsed)
+      ? parsed.filter((s) => s?.url)
+      : DEFAULT_SOURCES;
   } catch {
     return DEFAULT_SOURCES;
   }

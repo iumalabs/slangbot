@@ -28,7 +28,10 @@ export interface RunOptions {
   imageOnly?: boolean;
 }
 
-export async function runDailyPipeline(env: Env, opts: RunOptions = {}): Promise<string> {
+export async function runDailyPipeline(
+  env: Env,
+  opts: RunOptions = {},
+): Promise<string> {
   const date = opts.date ?? todayUTC();
   const db = env.DB;
 
@@ -37,7 +40,13 @@ export async function runDailyPipeline(env: Env, opts: RunOptions = {}): Promise
   if (opts.imageOnly) {
     if (!existing) return `no entry for ${date}`;
     try {
-      const key = await illustrate(env.AI, env.IMAGES, existing.slug, existing.term, existing.definition_en);
+      const key = await illustrate(
+        env.AI,
+        env.IMAGES,
+        existing.slug,
+        existing.term,
+        existing.definition_en,
+      );
       await setImageKey(db, existing.slug, key);
       await logCron(db, "illustrate", "ok", `regenerated ${key}`);
       return `illustration regenerated for ${existing.slug}`;
@@ -48,7 +57,12 @@ export async function runDailyPipeline(env: Env, opts: RunOptions = {}): Promise
   }
 
   if (existing && !opts.force) {
-    await logCron(db, "pipeline", "skip", `entry for ${date} already exists (${existing.slug})`);
+    await logCron(
+      db,
+      "pipeline",
+      "skip",
+      `entry for ${date} already exists (${existing.slug})`,
+    );
     return `already published for ${date}: ${existing.slug}`;
   }
 
@@ -126,7 +140,13 @@ export async function runDailyPipeline(env: Env, opts: RunOptions = {}): Promise
 
   // 4. Illustrate (1 image call). Failure is non-fatal — entry ships anyway.
   try {
-    const key = await illustrate(env.AI, env.IMAGES, slug, entry.term, entry.definition_en);
+    const key = await illustrate(
+      env.AI,
+      env.IMAGES,
+      slug,
+      entry.term,
+      entry.definition_en,
+    );
     await setImageKey(db, slug, key);
     await logCron(db, "illustrate", "ok", key);
   } catch (e) {
@@ -134,10 +154,15 @@ export async function runDailyPipeline(env: Env, opts: RunOptions = {}): Promise
   }
 
   // 5. Optional Telegram autopost (feature flag, plain Bot API fetch, no AI).
-  if (env.TELEGRAM_ENABLED === "true" && env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHANNEL_ID) {
+  if (
+    env.TELEGRAM_ENABLED === "true" && env.TELEGRAM_BOT_TOKEN &&
+    env.TELEGRAM_CHANNEL_ID
+  ) {
     try {
       const text = `${SITE_NAME} — word of the day: ${entry.term}\n` +
-        `${entry.definition_en.slice(0, 140)}\n${CANONICAL_ORIGIN}/term/${slug}`;
+        `${
+          entry.definition_en.slice(0, 140)
+        }\n${CANONICAL_ORIGIN}/term/${slug}`;
       const res = await fetch(
         `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`,
         {
@@ -146,7 +171,12 @@ export async function runDailyPipeline(env: Env, opts: RunOptions = {}): Promise
           body: JSON.stringify({ chat_id: env.TELEGRAM_CHANNEL_ID, text }),
         },
       );
-      await logCron(db, "telegram", res.ok ? "ok" : "error", `status ${res.status}`);
+      await logCron(
+        db,
+        "telegram",
+        res.ok ? "ok" : "error",
+        `status ${res.status}`,
+      );
     } catch (e) {
       await logCron(db, "telegram", "error", String(e));
     }

@@ -3,7 +3,6 @@ export function slugify(term: string): string {
   return term
     .toLowerCase()
     .normalize("NFKD")
-    // deno-lint-ignore no-control-regex
     .replace(/[̀-ͯ]/g, "")
     .replace(/['’]/g, "")
     .replace(/[^a-z0-9]+/g, "-")

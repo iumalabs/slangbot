@@ -40,7 +40,8 @@ export function parseUrban(json: string): string[] {
 /** Extract <title> texts from an RSS/Atom feed, dropping the channel title. */
 export function parseFeedTitles(xml: string): string[] {
   const titles: string[] = [];
-  const re = /<title(?:\s[^>]*)?>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/gi;
+  const re =
+    /<title(?:\s[^>]*)?>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(xml)) !== null) {
     const text = m[1].replace(/<[^>]+>/g, "").trim();
@@ -56,7 +57,8 @@ export function parseFeedTitles(xml: string): string[] {
 export function extractTermsFromTitles(titles: string[]): string[] {
   const out: string[] = [];
   for (const title of titles) {
-    const quoted = title.match(/[""]([^""]{2,40})[""]|"([^"]{2,40})"|'([^']{2,40})'/g) ?? [];
+    const quoted =
+      title.match(/[""]([^""]{2,40})[""]|"([^"]{2,40})"|'([^']{2,40})'/g) ?? [];
     for (const q of quoted) {
       out.push(q.replace(/^[""'"]|[""'"]$/g, "").trim());
     }

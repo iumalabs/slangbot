@@ -30,7 +30,10 @@ export async function runImage(ai: Ai, prompt: string): Promise<Uint8Array> {
     { prompt, steps: 6 },
     { gateway: AI_GATEWAY },
   )) as { image?: string } | ReadableStream;
-  if (res && typeof res === "object" && "image" in res && typeof res.image === "string") {
+  if (
+    res && typeof res === "object" && "image" in res &&
+    typeof res.image === "string"
+  ) {
     const bin = atob(res.image);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);

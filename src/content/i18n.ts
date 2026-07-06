@@ -34,7 +34,8 @@ const en = {
   archiveSearch: "search the archive…",
   archiveEmpty: "nothing found. suggest it below?",
   suggestTitle: "request a word",
-  suggestHint: "know a term we should decode? drop it here. a robot will consider it.",
+  suggestHint:
+    "know a term we should decode? drop it here. a robot will consider it.",
   suggestPlaceholder: "e.g. rizz",
   suggestSubmit: "suggest",
   suggestThanks: "noted. the machine will consider it.",
@@ -57,8 +58,10 @@ const en = {
   backHome: "back to today's word",
   langToggle: "RU",
   skipToContent: "skip to content",
-  illustrationAlt: (term: string) => `ironic AI illustration for the term "${term}"`,
-  noEntryYet: "the robot has not published anything yet. check back after midnight UTC.",
+  illustrationAlt: (term: string) =>
+    `ironic AI illustration for the term "${term}"`,
+  noEntryYet:
+    "the robot has not published anything yet. check back after midnight UTC.",
 } as const;
 
 const ru: Record<keyof typeof en, unknown> = {
@@ -90,7 +93,8 @@ const ru: Record<keyof typeof en, unknown> = {
   archiveSearch: "поиск по архиву…",
   archiveEmpty: "ничего не нашлось. предложите слово ниже?",
   suggestTitle: "предложить слово",
-  suggestHint: "знаете термин, который стоит разобрать? оставьте его здесь. робот подумает.",
+  suggestHint:
+    "знаете термин, который стоит разобрать? оставьте его здесь. робот подумает.",
   suggestPlaceholder: "например, rizz",
   suggestSubmit: "предложить",
   suggestThanks: "принято. машина подумает.",
@@ -113,7 +117,8 @@ const ru: Record<keyof typeof en, unknown> = {
   backHome: "к слову дня",
   langToggle: "EN",
   skipToContent: "к содержанию",
-  illustrationAlt: (term: string) => `ироничная ИИ-иллюстрация к термину «${term}»`,
+  illustrationAlt: (term: string) =>
+    `ироничная ИИ-иллюстрация к термину «${term}»`,
   noEntryYet: "робот ещё ничего не опубликовал. загляните после полуночи UTC.",
 };
 

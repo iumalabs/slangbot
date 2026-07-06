@@ -19,7 +19,8 @@ Rules:
 - NEVER pick a term already published (list below), including trivial variants.
 - Respond with STRICT JSON only, no prose, no code fences:
   {"term": "<the term>", "reason": "<one short sentence>", "source": "<where it trended or 'seed'>"}`,
-    user: `Candidate terms (from trend sources, reader suggestions, and the curated seed list):
+    user:
+      `Candidate terms (from trend sources, reader suggestions, and the curated seed list):
 ${candidates.slice(0, 120).map((c) => `- ${c}`).join("\n")}
 
 Already published (do not repeat):
@@ -72,7 +73,8 @@ Respond with STRICT JSON only (no prose, no code fences) matching exactly:
   "fake_definitions_en": [string, string],
   "fake_definitions_ru": [string, string]
 }`,
-    user: `Write today's full bilingual entry for the term: "${term}". STRICT JSON only.`,
+    user:
+      `Write today's full bilingual entry for the term: "${term}". STRICT JSON only.`,
   };
 }
 

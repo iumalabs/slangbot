@@ -37,7 +37,10 @@ export async function choiceOrder(
 }
 
 /** Display index of the real definition. */
-export async function correctIndex(slug: string, secret: string): Promise<number> {
+export async function correctIndex(
+  slug: string,
+  secret: string,
+): Promise<number> {
   const order = await choiceOrder(slug, secret);
   return order.indexOf(0);
 }

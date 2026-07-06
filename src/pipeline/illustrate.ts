@@ -13,7 +13,10 @@ export async function illustrate(
   const bytes = await runImage(ai, imagePrompt(term, definitionEn));
   const key = `terms/${slug}.png`;
   await images.put(key, bytes.buffer as ArrayBuffer, {
-    httpMetadata: { contentType: "image/png", cacheControl: "public, max-age=31536000, immutable" },
+    httpMetadata: {
+      contentType: "image/png",
+      cacheControl: "public, max-age=31536000, immutable",
+    },
   });
   return key;
 }

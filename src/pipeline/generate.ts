@@ -30,9 +30,16 @@ function str(v: unknown, field: string, required = true): string {
   throw new Error(`entry: missing field ${field}`);
 }
 
-function strArray(v: unknown, field: string, min: number, max: number): string[] {
+function strArray(
+  v: unknown,
+  field: string,
+  min: number,
+  max: number,
+): string[] {
   if (!Array.isArray(v)) throw new Error(`entry: ${field} not an array`);
-  const arr = v.filter((x) => typeof x === "string" && x.trim()).map((x) => (x as string).trim());
+  const arr = v.filter((x) => typeof x === "string" && x.trim()).map((x) =>
+    (x as string).trim()
+  );
   if (arr.length < min) throw new Error(`entry: ${field} needs >=${min} items`);
   return arr.slice(0, max);
 }
@@ -67,7 +74,10 @@ export function parseEntryJson(raw: string): GeneratedEntry {
   };
 }
 
-export async function generateEntry(ai: Ai, term: string): Promise<GeneratedEntry> {
+export async function generateEntry(
+  ai: Ai,
+  term: string,
+): Promise<GeneratedEntry> {
   const { system, user } = entryPrompt(term);
   const raw = await runText(ai, [
     { role: "system", content: system },
@@ -84,7 +94,9 @@ export async function generateEntry(ai: Ai, term: string): Promise<GeneratedEntr
       {
         role: "user",
         content:
-          `Your previous output was invalid (${(firstError as Error).message}). ` +
+          `Your previous output was invalid (${
+            (firstError as Error).message
+          }). ` +
           `Respond again with STRICT valid JSON only.`,
       },
     ], 2400);

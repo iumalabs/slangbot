@@ -9,7 +9,11 @@
 export type DayResult = "g" | "y" | "r";
 export type ResultsMap = Record<string, DayResult>;
 
-const EMOJI: Record<DayResult, string> = { g: "\u{1F7E9}", y: "\u{1F7E8}", r: "\u{1F7E5}" };
+const EMOJI: Record<DayResult, string> = {
+  g: "\u{1F7E9}",
+  y: "\u{1F7E8}",
+  r: "\u{1F7E5}",
+};
 
 /** Monday of the week containing `date` (UTC). */
 export function weekStart(date: string): string {

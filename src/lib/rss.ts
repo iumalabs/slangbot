@@ -2,7 +2,7 @@
 
 import { CANONICAL_ORIGIN, SITE_NAME, TAGLINE } from "../config.ts";
 import type { TermRow } from "./d1.ts";
-import { localePath, type Locale } from "./i18n.ts";
+import { type Locale, localePath } from "./i18n.ts";
 
 export function escapeXml(s: string): string {
   return s
@@ -14,11 +14,15 @@ export function escapeXml(s: string): string {
 }
 
 export function buildRss(terms: TermRow[], locale: Locale): string {
-  const title = locale === "ru" ? `${SITE_NAME} — словарь сленга` : `${SITE_NAME} — ${TAGLINE}`;
+  const title = locale === "ru"
+    ? `${SITE_NAME} — словарь сленга`
+    : `${SITE_NAME} — ${TAGLINE}`;
   const home = `${CANONICAL_ORIGIN}${localePath(locale, "/")}`;
   const items = terms
     .map((t) => {
-      const link = `${CANONICAL_ORIGIN}${localePath(locale, `/term/${t.slug}`)}`;
+      const link = `${CANONICAL_ORIGIN}${
+        localePath(locale, `/term/${t.slug}`)
+      }`;
       const desc = locale === "ru" ? t.definition_ru : t.definition_en;
       return `    <item>
       <title>${escapeXml(t.term)}</title>

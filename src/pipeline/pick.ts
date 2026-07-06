@@ -47,12 +47,18 @@ export async function pickTerm(
   const pick = parsePickJson(raw);
 
   // Hard local checks — the model is not trusted with policy.
-  if (isBlocked(pick.term, blocklist)) throw new Error(`pick blocked: ${pick.term}`);
+  if (isBlocked(pick.term, blocklist)) {
+    throw new Error(`pick blocked: ${pick.term}`);
+  }
   if (publishedSlugs.has(slugify(pick.term))) {
     // Deterministic fallback: first unpublished, unblocked candidate.
     const fallback = usable.find((c) => !publishedSlugs.has(slugify(c.term)));
     if (!fallback) throw new Error("all candidates already published");
-    return { term: fallback.term, reason: "fallback: model picked a duplicate", source: fallback.source };
+    return {
+      term: fallback.term,
+      reason: "fallback: model picked a duplicate",
+      source: fallback.source,
+    };
   }
   return pick;
 }

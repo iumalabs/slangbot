@@ -95,7 +95,10 @@ export async function verifyAccessJwt(
 }
 
 /** Fetch the team's public certs, cached in KV for an hour. */
-export function kvCachedKeyFetcher(kv: KVNamespace, teamDomain: string): KeyFetcher {
+export function kvCachedKeyFetcher(
+  kv: KVNamespace,
+  teamDomain: string,
+): KeyFetcher {
   return async () => {
     const cacheKey = "access:certs";
     const cached = await kv.get(cacheKey);

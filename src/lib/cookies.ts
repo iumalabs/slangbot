@@ -27,7 +27,10 @@ export function base64UrlDecode(s: string): Uint8Array {
   return out;
 }
 
-export async function signValue(value: string, secret: string): Promise<string> {
+export async function signValue(
+  value: string,
+  secret: string,
+): Promise<string> {
   const key = await hmacKey(secret);
   const mac = await crypto.subtle.sign("HMAC", key, encoder.encode(value));
   return `${value}.${base64UrlEncode(mac)}`;

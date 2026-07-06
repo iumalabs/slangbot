@@ -64,7 +64,9 @@ export function parseFakeDefs(row: TermRow): FakeDefs {
 export function parseRelated(row: TermRow): string[] {
   try {
     const parsed = JSON.parse(row.related_json);
-    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((x) => typeof x === "string")
+      : [];
   } catch {
     return [];
   }
@@ -73,22 +75,35 @@ export function parseRelated(row: TermRow): string[] {
 export function parseTags(json: string): string[] {
   try {
     const parsed = JSON.parse(json);
-    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((x) => typeof x === "string")
+      : [];
   } catch {
     return [];
   }
 }
 
-export async function getTermByDate(db: D1Database, date: string): Promise<TermRow | null> {
-  return await db.prepare("SELECT * FROM terms WHERE date = ?").bind(date).first<TermRow>();
+export async function getTermByDate(
+  db: D1Database,
+  date: string,
+): Promise<TermRow | null> {
+  return await db.prepare("SELECT * FROM terms WHERE date = ?").bind(date)
+    .first<TermRow>();
 }
 
-export async function getTermBySlug(db: D1Database, slug: string): Promise<TermRow | null> {
-  return await db.prepare("SELECT * FROM terms WHERE slug = ?").bind(slug).first<TermRow>();
+export async function getTermBySlug(
+  db: D1Database,
+  slug: string,
+): Promise<TermRow | null> {
+  return await db.prepare("SELECT * FROM terms WHERE slug = ?").bind(slug)
+    .first<TermRow>();
 }
 
 /** Latest published term with date <= today (today's issue). */
-export async function getLatestTerm(db: D1Database, today: string): Promise<TermRow | null> {
+export async function getLatestTerm(
+  db: D1Database,
+  today: string,
+): Promise<TermRow | null> {
   return await db
     .prepare("SELECT * FROM terms WHERE date <= ? ORDER BY date DESC LIMIT 1")
     .bind(today)
@@ -96,7 +111,10 @@ export async function getLatestTerm(db: D1Database, today: string): Promise<Term
 }
 
 /** 1-based issue number of a term (position in the date-ordered archive). */
-export async function getDayNumber(db: D1Database, date: string): Promise<number> {
+export async function getDayNumber(
+  db: D1Database,
+  date: string,
+): Promise<number> {
   const row = await db
     .prepare("SELECT COUNT(*) AS n FROM terms WHERE date <= ?")
     .bind(date)
@@ -177,7 +195,10 @@ export interface NewTerm {
 }
 
 /** Idempotent publish: re-running the pipeline for a date replaces the entry. */
-export async function upsertTermByDate(db: D1Database, t: NewTerm): Promise<void> {
+export async function upsertTermByDate(
+  db: D1Database,
+  t: NewTerm,
+): Promise<void> {
   await db
     .prepare(
       `INSERT INTO terms (
@@ -232,14 +253,22 @@ export async function setImageKey(
   slug: string,
   imageKey: string | null,
 ): Promise<void> {
-  await db.prepare("UPDATE terms SET image_key = ? WHERE slug = ?").bind(imageKey, slug).run();
+  await db.prepare("UPDATE terms SET image_key = ? WHERE slug = ?").bind(
+    imageKey,
+    slug,
+  ).run();
 }
 
 // --- seed_terms ---
 
-export async function getUnusedSeedTerms(db: D1Database, limit = 30): Promise<string[]> {
+export async function getUnusedSeedTerms(
+  db: D1Database,
+  limit = 30,
+): Promise<string[]> {
   const res = await db
-    .prepare("SELECT term FROM seed_terms WHERE used = 0 ORDER BY priority DESC LIMIT ?")
+    .prepare(
+      "SELECT term FROM seed_terms WHERE used = 0 ORDER BY priority DESC LIMIT ?",
+    )
     .bind(limit)
     .all<{ term: string }>();
   return res.results.map((r) => r.term);
@@ -252,11 +281,20 @@ export async function countUnusedSeedTerms(db: D1Database): Promise<number> {
   return row?.n ?? 0;
 }
 
-export async function markSeedTermUsed(db: D1Database, term: string): Promise<void> {
-  await db.prepare("UPDATE seed_terms SET used = 1 WHERE lower(term) = lower(?)").bind(term).run();
+export async function markSeedTermUsed(
+  db: D1Database,
+  term: string,
+): Promise<void> {
+  await db.prepare(
+    "UPDATE seed_terms SET used = 1 WHERE lower(term) = lower(?)",
+  ).bind(term).run();
 }
 
-export async function addSeedTerm(db: D1Database, term: string, priority = 0): Promise<void> {
+export async function addSeedTerm(
+  db: D1Database,
+  term: string,
+  priority = 0,
+): Promise<void> {
   await db
     .prepare("INSERT OR IGNORE INTO seed_terms (term, priority) VALUES (?, ?)")
     .bind(term, priority)
@@ -265,7 +303,10 @@ export async function addSeedTerm(db: D1Database, term: string, priority = 0): P
 
 // --- suggestions ---
 
-export async function insertSuggestion(db: D1Database, term: string): Promise<void> {
+export async function insertSuggestion(
+  db: D1Database,
+  term: string,
+): Promise<void> {
   await db
     .prepare("INSERT INTO suggestions (term, status) VALUES (?, 'new')")
     .bind(term)
@@ -278,14 +319,19 @@ export async function listSuggestions(
 ): Promise<SuggestionRow[]> {
   const res = status
     ? await db
-      .prepare("SELECT * FROM suggestions WHERE status = ? ORDER BY id DESC LIMIT 200")
+      .prepare(
+        "SELECT * FROM suggestions WHERE status = ? ORDER BY id DESC LIMIT 200",
+      )
       .bind(status)
       .all<SuggestionRow>()
-    : await db.prepare("SELECT * FROM suggestions ORDER BY id DESC LIMIT 200").all<SuggestionRow>();
+    : await db.prepare("SELECT * FROM suggestions ORDER BY id DESC LIMIT 200")
+      .all<SuggestionRow>();
   return res.results;
 }
 
-export async function getApprovedSuggestions(db: D1Database): Promise<SuggestionRow[]> {
+export async function getApprovedSuggestions(
+  db: D1Database,
+): Promise<SuggestionRow[]> {
   return await listSuggestions(db, "approved");
 }
 
@@ -294,10 +340,16 @@ export async function setSuggestionStatus(
   id: number,
   status: SuggestionRow["status"],
 ): Promise<void> {
-  await db.prepare("UPDATE suggestions SET status = ? WHERE id = ?").bind(status, id).run();
+  await db.prepare("UPDATE suggestions SET status = ? WHERE id = ?").bind(
+    status,
+    id,
+  ).run();
 }
 
-export async function markSuggestionPublished(db: D1Database, term: string): Promise<void> {
+export async function markSuggestionPublished(
+  db: D1Database,
+  term: string,
+): Promise<void> {
   await db
     .prepare(
       "UPDATE suggestions SET status = 'published' WHERE lower(term) = lower(?) AND status = 'approved'",
@@ -306,7 +358,10 @@ export async function markSuggestionPublished(db: D1Database, term: string): Pro
     .run();
 }
 
-export async function countSuggestions(db: D1Database, status: string): Promise<number> {
+export async function countSuggestions(
+  db: D1Database,
+  status: string,
+): Promise<number> {
   const row = await db
     .prepare("SELECT COUNT(*) AS n FROM suggestions WHERE status = ?")
     .bind(status)
@@ -328,7 +383,10 @@ export async function logCron(
     .run();
 }
 
-export async function recentCronLog(db: D1Database, limit = 50): Promise<CronLogRow[]> {
+export async function recentCronLog(
+  db: D1Database,
+  limit = 50,
+): Promise<CronLogRow[]> {
   const res = await db
     .prepare("SELECT * FROM cron_log ORDER BY id DESC LIMIT ?")
     .bind(limit)
