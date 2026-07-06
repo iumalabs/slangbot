@@ -21,6 +21,7 @@ specifiers; no `package.json`, no npm/node/npx).
 | `deno task build:client`                           | bundle `assets/client.js` (islands hydration)           |
 | `deno task deploy`                                 | build client + deploy to workers.dev                    |
 | `deno task test`                                   | full test suite (`deno test -A`)                        |
+| `deno task lint`                                   | `deno lint` + `deno fmt --check`                        |
 | `deno task db:migrate:local` / `db:migrate:remote` | apply D1 migrations                                     |
 | `deno task seed`                                   | insert one demo term into the local D1                  |
 

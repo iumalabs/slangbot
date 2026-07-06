@@ -68,20 +68,21 @@ export class FakeD1 {
         bound = values;
         return stmt;
       },
-      // deno-lint-ignore no-explicit-any
       first<T>(): Promise<T | null> {
-        return Promise.resolve(db.#firstFor(q, bound) as any);
+        return Promise.resolve(db.#firstFor(q, bound) as T | null);
       },
-      // deno-lint-ignore no-explicit-any
-      all<T>(): Promise<{ results: T[]; success: boolean; meta: any }> {
+      all<T>(): Promise<
+        { results: T[]; success: boolean; meta: Record<string, unknown> }
+      > {
         return Promise.resolve({
           results: db.#allFor(q, bound) as T[],
           success: true,
           meta: {},
         });
       },
-      // deno-lint-ignore no-explicit-any
-      run(): Promise<{ results: any[]; success: boolean; meta: any }> {
+      run(): Promise<
+        { results: never[]; success: boolean; meta: Record<string, unknown> }
+      > {
         db.#runFor(q, bound);
         return Promise.resolve({ results: [], success: true, meta: {} });
       },
