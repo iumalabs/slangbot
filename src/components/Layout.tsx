@@ -88,7 +88,6 @@ export function Layout(props: LayoutProps) {
         <a className="skip-link" href="#main">{ui.skipToContent}</a>
         <div className="bg-glow" aria-hidden="true"></div>
         <header className="topbar">
-          <span className="ua-flag" aria-hidden="true"></span>
           <p className="ticker" aria-label="site status">
             {props.tickerDate
               ? (
@@ -121,6 +120,7 @@ export function Layout(props: LayoutProps) {
             </a>
           </nav>
         </header>
+        <span className="ua-flag" aria-hidden="true"></span>
         <div className="masthead">
           <a className="wordmark" href={localePath(props.locale, "/")}>
             {SITE_NAME}
