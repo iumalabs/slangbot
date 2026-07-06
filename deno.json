@@ -1,8 +1,37 @@
 {
   "tasks": {
-    "dev": "deno run --watch --allow-net main.ts"
+    "dev": "deno run -A scripts/dev.ts",
+    "build:client": "deno run -A npm:esbuild@0.25.5 src/client/entry-client.tsx --bundle --format=esm --target=es2022 --jsx=automatic --minify --outfile=assets/client.js",
+    "deploy": "deno task build:client && deno run -A npm:wrangler@latest deploy",
+    "test": "deno test -A",
+    "check": "deno check src/index.tsx src/client/entry-client.tsx",
+    "db:migrate:local": "deno run -A npm:wrangler@latest d1 migrations apply iuma-db --local",
+    "db:migrate:remote": "deno run -A npm:wrangler@latest d1 migrations apply iuma-db --remote",
+    "seed": "deno run -A npm:wrangler@latest d1 execute iuma-db --local --file=scripts/seed-demo.sql"
   },
   "imports": {
+    "react": "npm:react@18.3.1",
+    "react/jsx-runtime": "npm:react@18.3.1/jsx-runtime",
+    "react-dom": "npm:react-dom@18.3.1",
+    "react-dom/server": "npm:react-dom@18.3.1/server",
+    "react-dom/client": "npm:react-dom@18.3.1/client",
+    "hono": "npm:hono@4.7.11",
+    "hono/": "npm:/hono@4.7.11/",
+    "workers-og": "npm:workers-og@0.0.25",
+    "@types/react": "npm:@types/react@18.3.12",
     "@std/assert": "jsr:@std/assert@1"
-  }
+  },
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "types": ["@types/react"],
+    "lib": ["deno.ns", "dom", "dom.iterable", "esnext"]
+  },
+  "fmt": {
+    "exclude": ["assets/client.js", "migrations/"]
+  },
+  "lint": {
+    "exclude": ["assets/client.js"]
+  },
+  "nodeModulesDir": "none"
 }

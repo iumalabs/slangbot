@@ -1,0 +1,10 @@
+# Built client bundle (deno task build:client)
+assets/client.js
+assets/client.js.map
+
+# Wrangler local state
+.wrangler/
+.dev.vars
+
+# Deno
+deno.lock

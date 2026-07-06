@@ -1,0 +1,48 @@
+# iuma — autonomous slang-of-the-day dictionary.
+# NOTE: no custom domain / routes here on purpose: the owner attaches iuma.dev
+# manually in the Cloudflare dashboard. This config deploys to workers.dev.
+
+name = "iuma"
+main = "src/index.tsx"
+compatibility_date = "2025-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "assets"
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "iuma-db"
+# Replace with the real id after `wrangler d1 create iuma-db` (see README).
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[[kv_namespaces]]
+binding = "KV"
+# Replace with the real id after `wrangler kv namespace create iuma-kv` (see README).
+id = "0000000000000000000000000000000000"
+
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "iuma-images"
+
+[triggers]
+crons = ["0 0 * * *"]
+
+[vars]
+# Cloudflare Turnstile *test* site key (always passes). Replace for production.
+TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
+# Your Cloudflare Zero Trust team domain, e.g. "myteam.cloudflareaccess.com".
+ACCESS_TEAM_DOMAIN = ""
+# Feature flag for the Telegram autopost step ("true" to enable).
+TELEGRAM_ENABLED = "false"
+
+# Secrets (set via `wrangler secret put <NAME>`, never committed):
+#   TURNSTILE_SECRET      — Turnstile secret key
+#   COOKIE_HMAC_SECRET    — random string used to sign visitor cookies
+#   ADMIN_ACCESS_AUD      — Cloudflare Access application AUD tag
+#   TELEGRAM_BOT_TOKEN    — optional, only if TELEGRAM_ENABLED = "true"
+#   TELEGRAM_CHANNEL_ID   — optional, only if TELEGRAM_ENABLED = "true"
