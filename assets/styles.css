@@ -107,25 +107,33 @@ a:hover {
   height: 54px;
   border-radius: 3px;
   background: linear-gradient(180deg, #0057b7 0% 50%, #ffd700 50% 100%);
-  filter: blur(4px);
+  filter: blur(7px) saturate(0.7);
+  opacity: 0.55;
   transform-origin: left center;
-  animation: flag-wave 2.4s ease-in-out infinite;
+  animation: flag-wave 5s ease-in-out infinite;
   pointer-events: none;
 }
 
 @keyframes flag-wave {
   0%,
   100% {
-    transform: skewY(-4deg) scaleX(1);
+    transform: skewY(-3deg) scaleX(1);
   }
   25% {
-    transform: skewY(3deg) scaleX(0.95);
+    transform: skewY(2deg) scaleX(0.97);
   }
   50% {
-    transform: skewY(-2deg) scaleX(1.03);
+    transform: skewY(-1.5deg) scaleX(1.02);
   }
   75% {
-    transform: skewY(4deg) scaleX(0.96);
+    transform: skewY(3deg) scaleX(0.98);
+  }
+}
+
+@media (max-width: 640px) {
+  .ua-flag {
+    width: 56px;
+    height: 36px;
   }
 }
 
