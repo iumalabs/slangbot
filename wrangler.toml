@@ -16,14 +16,12 @@ binding = "AI"
 [[d1_databases]]
 binding = "DB"
 database_name = "iuma-db"
-# Replace with the real id after `wrangler d1 create iuma-db` (see README).
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "fce762c2-3984-4803-960c-64e416e970ac"
 migrations_dir = "migrations"
 
 [[kv_namespaces]]
 binding = "KV"
-# Replace with the real id after `wrangler kv namespace create iuma-kv` (see README).
-id = "0000000000000000000000000000000000"
+id = "c7e3c6e69ff5484fbf37721905777f66"
 
 [[r2_buckets]]
 binding = "IMAGES"
