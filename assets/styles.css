@@ -103,8 +103,8 @@ a:hover {
   top: 68px;
   left: 20px;
   z-index: 5;
-  width: 56px;
-  height: 36px;
+  width: 84px;
+  height: 54px;
   border-radius: 3px;
   background: linear-gradient(180deg, #0057b7 0% 50%, #ffd700 50% 100%);
   filter: blur(4px);
