@@ -100,11 +100,11 @@ a:hover {
 /* Blurred waving Ukrainian flag pinned just below the topbar, left corner. */
 .ua-flag {
   position: fixed;
-  top: 52px;
-  left: 18px;
+  top: 68px;
+  left: 20px;
   z-index: 5;
-  width: 44px;
-  height: 28px;
+  width: 56px;
+  height: 36px;
   border-radius: 3px;
   background: linear-gradient(180deg, #0057b7 0% 50%, #ffd700 50% 100%);
   filter: blur(4px);
