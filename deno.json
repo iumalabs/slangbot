@@ -1,8 +1,8 @@
 {
   "tasks": {
-    "dev": "deno run -A scripts/dev.ts",
+    "dev": "deno install && deno run -A scripts/dev.ts",
     "build:client": "deno run -A scripts/build-client.ts",
-    "deploy": "deno task build:client && deno run -A npm:wrangler@latest deploy",
+    "deploy": "deno install && deno task build:client && deno run -A npm:wrangler@latest deploy",
     "test": "deno test -A",
     "check": "deno check src/index.tsx src/client/entry-client.tsx",
     "db:migrate:local": "deno run -A npm:wrangler@latest d1 migrations apply iuma-db --local",
@@ -35,5 +35,5 @@
   "lint": {
     "exclude": ["assets/client.js"]
   },
-  "nodeModulesDir": "none"
+  "nodeModulesDir": "auto"
 }

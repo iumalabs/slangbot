@@ -6,5 +6,7 @@ assets/client.js.map
 .wrangler/
 .dev.vars
 
-# Deno
+# Deno (node_modules is materialized by `deno install` for wrangler's
+# bundler to resolve npm specifiers — never committed)
 deno.lock
+node_modules/
