@@ -1,0 +1,12 @@
+# Built client bundle (deno task build:client)
+assets/client.js
+assets/client.js.map
+
+# Wrangler local state
+.wrangler/
+.dev.vars
+
+# Deno (node_modules is materialized by `deno install` for wrangler's
+# bundler to resolve npm specifiers — never committed)
+deno.lock
+node_modules/
