@@ -1,7 +1,9 @@
-# iuma
+# slangbot
 
 **the Internet's Unofficial Manual of Argot** — a fully autonomous daily
-dictionary of American/internet slang at [iuma.dev](https://iuma.dev).
+dictionary of American/internet slang, deployed at [iuma.dev](https://iuma.dev).
+"slangbot" is the product name (see `SITE_NAME` in `src/config.ts`); "iuma.dev"
+is just the domain the owner attached to it.
 
 Every day at 00:00 UTC a cron job picks one trending slang term, writes a full
 bilingual (EN/RU) entry, generates two plausible fake definitions for the
@@ -96,7 +98,12 @@ spoofed `Cf-Access-Jwt-Assertion` header is rejected).
    Self-hosted.
 2. Application domain: `iuma.dev/admin*`. During development add a second domain
    for `iuma.<account>.workers.dev/admin*`.
-3. Policy: Allow → Include → Emails → your email (one-person policy).
+3. Policy: reuse an existing policy if you already have one that fits (e.g. an
+   email allowlist combined with `Require: Warp` + `Require: Gateway`, so
+   `/admin` is only reachable from a device connected through your Zero Trust
+   WARP client) — Access lets you attach the same policy object to multiple
+   applications. Otherwise create one: Allow → Include → Emails → your email
+   (one-person policy).
 4. After saving, open the application → **Overview** → copy the **Application
    Audience (AUD) Tag** → `wrangler secret put ADMIN_ACCESS_AUD`.
 5. Set `ACCESS_TEAM_DOMAIN` in `wrangler.toml` to your team domain
@@ -105,6 +112,23 @@ spoofed `Cf-Access-Jwt-Assertion` header is rejected).
 Admin features: re-run today's pipeline, regenerate an entry or only its
 illustration for any date, moderate the suggestion queue, edit the blocklist and
 trend-source list (KV), inspect the last 50 cron log rows and the seed supply.
+
+### Manual trigger (don't wait for the 00:00 UTC cron)
+
+The daily pipeline is idempotent (upserts by date), so re-running it is always
+safe. Visit `https://iuma.dev/admin` (through your Zero Trust WARP client, per
+the policy above), click "re-run today's pipeline" — or fill in a date under
+"regenerate" to redo/backfill a specific day, optionally "illustration only".
+
+`/admin/run` and `/admin/regenerate` also respond with JSON instead of the admin
+HTML page when the caller sends `Accept: application/json` — handy for
+`curl`-ing them from your own WARP-connected machine
+(`curl -X POST https://iuma.dev/admin/run -H "Accept: application/json"`,
+authenticated the same way a browser would be, e.g. via a cached Access session
+cookie or `cloudflared access curl`). There's no GitHub Actions / Service Token
+path here on purpose — a `Require: Warp` policy has no way to pass for a cloud
+CI runner, so unattended automation isn't compatible with this policy shape; the
+admin panel is the intended trigger surface.
 
 ## Cost model (Workers AI free tier: 10,000 neurons/day)
 
