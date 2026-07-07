@@ -33,7 +33,14 @@ export async function choiceOrder(
   const mac = new Uint8Array(
     await crypto.subtle.sign("HMAC", key, encoder.encode(`order:${slug}`)),
   );
-  return PERMUTATIONS[mac[0] % 6];
+  // Rejection sampling: 252 is the largest multiple of 6 that fits in a
+  // byte, so `byte % 6` is unbiased only for bytes < 252. Scan the MAC for
+  // the first such byte (the chance that all 32 bytes are >= 252 is
+  // (4/256)^32 — effectively never; the final fallback keeps this total).
+  for (const byte of mac) {
+    if (byte < 252) return PERMUTATIONS[byte % 6];
+  }
+  return PERMUTATIONS[0];
 }
 
 /** Display index of the real definition. */
