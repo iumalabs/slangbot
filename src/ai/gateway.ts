@@ -32,20 +32,44 @@ async function runWithGatewayFallback(
   }
 }
 
+/**
+ * Pull the generated text out of the model response. Workers AI text models
+ * answer with `{response}`; via AI Gateway or newer runtimes the payload may
+ * be nested (`{result: {response}}`) or OpenAI-shaped
+ * (`{choices: [{message: {content}}]}`). Exported for tests.
+ */
+export function extractTextResponse(res: unknown): string {
+  if (typeof res === "string") return res;
+  if (res && typeof res === "object") {
+    const r = res as Record<string, unknown>;
+    if (typeof r.response === "string") return r.response;
+    const result = r.result as Record<string, unknown> | undefined;
+    if (result && typeof result.response === "string") return result.response;
+    const choices = r.choices as
+      | { message?: { content?: unknown } }[]
+      | undefined;
+    const content = choices?.[0]?.message?.content;
+    if (typeof content === "string") return content;
+  }
+  throw new Error(
+    `unexpected text model response shape: ${
+      JSON.stringify(res)?.slice(0, 300)
+    }`,
+  );
+}
+
 /** Run a text call with an explicit max_tokens cap. Returns the raw response text. */
 export async function runText(
   ai: Ai,
   messages: ChatMessage[],
   maxTokens: number,
 ): Promise<string> {
-  const res = (await runWithGatewayFallback(ai, TEXT_MODEL, {
+  const res = await runWithGatewayFallback(ai, TEXT_MODEL, {
     messages,
     max_tokens: maxTokens,
     temperature: 0.7,
-  })) as { response?: string } | string;
-  if (typeof res === "string") return res;
-  if (res && typeof res.response === "string") return res.response;
-  throw new Error("unexpected text model response shape");
+  });
+  return extractTextResponse(res);
 }
 
 /** Run the Flux image model; returns PNG/JPEG bytes. */
