@@ -101,14 +101,14 @@ Nothing deploys from a laptop:
 One-time setup in the dashboard (Workers & Pages → iuma → Settings → Build →
 **Connect** a Git repository), then fill the build configuration in:
 
-| Field                                | Value                          |
-| ------------------------------------ | ------------------------------ |
-| Git repository                       | `maksimyugai/iumadev`          |
-| Production branch                    | `main`                         |
-| Build command                        | `deno task build`              |
-| Deploy command                       | `npx wrangler deploy`          |
-| Non-production branch deploy command | `npx wrangler versions upload` |
-| Root directory                       | `/`                            |
+| Field                                | Value                                                                      |
+| ------------------------------------ | -------------------------------------------------------------------------- |
+| Git repository                       | `maksimyugai/iumadev`                                                      |
+| Production branch                    | `main`                                                                     |
+| Build command                        | `deno task build`                                                          |
+| Deploy command                       | `npx wrangler d1 migrations apply iuma-db --remote && npx wrangler deploy` |
+| Non-production branch deploy command | `npx wrangler versions upload`                                             |
+| Root directory                       | `/`                                                                        |
 
 Notes:
 
@@ -126,6 +126,30 @@ Notes:
   Domains & Routes → **Preview URLs** → enable Cloudflare Access, then attach
   your existing policy (e.g. the Warp-required one) to the generated
   `*-iuma.<account>.workers.dev` application. Dashboard-only switch.
+
+### D1 migrations in this flow
+
+The production deploy command applies pending migrations **before** deploying
+(`d1 migrations apply … && wrangler deploy`). This is safe and automatic:
+
+- **Idempotent.** D1 records applied migrations in its `d1_migrations` table, so
+  the command is a no-op on deploys that add no new migration files, and it
+  never re-runs an applied one.
+- **Fail-safe ordering.** The `&&` means a failing migration blocks the deploy —
+  old code keeps running against the old schema instead of new code crashing
+  against a half-migrated one.
+- **Write migrations to be backward-compatible.** Between "migration applied"
+  and "new code live" the _old_ code briefly runs on the _new_ schema — and a
+  rollback re-creates that state for longer. Additive changes (new tables,
+  `ADD COLUMN` with a default) are always fine; destructive ones (drop / rename)
+  need a two-PR dance: first ship code that works with both schemas, then drop.
+  D1 migrations have no "down" — forward-only.
+- **Previews don't migrate.** Non-production branches share the production D1,
+  so the preview command deliberately skips `migrations apply` — a branch's
+  un-merged migration must not mutate the production database. The flip side: a
+  preview of a schema-changing PR runs against the old schema and may error on
+  the new code paths; test those locally instead (`deno task db:migrate:local` +
+  `deno task dev`).
 
 ### Escape hatch: deploying from a local machine
 
