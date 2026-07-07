@@ -7,17 +7,42 @@ export interface ChatMessage {
   content: string;
 }
 
+/**
+ * Run a model through the AI Gateway; if the gateway is missing or broken
+ * (e.g. AiGatewayError 2001 before the owner creates "iuma-gw" in the
+ * dashboard), fall back to a direct Workers AI call so the daily issue still
+ * ships. The gateway is observability, not a functional dependency.
+ */
+async function runWithGatewayFallback(
+  ai: Ai,
+  model: string,
+  inputs: Record<string, unknown>,
+): Promise<unknown> {
+  try {
+    return await ai.run(model, inputs, { gateway: AI_GATEWAY });
+  } catch (e) {
+    if (String(e).includes("AiGatewayError")) {
+      console.warn(
+        `AI Gateway "${AI_GATEWAY.id}" unavailable, calling Workers AI directly:`,
+        e,
+      );
+      return await ai.run(model, inputs);
+    }
+    throw e;
+  }
+}
+
 /** Run a text call with an explicit max_tokens cap. Returns the raw response text. */
 export async function runText(
   ai: Ai,
   messages: ChatMessage[],
   maxTokens: number,
 ): Promise<string> {
-  const res = (await ai.run(
-    TEXT_MODEL,
-    { messages, max_tokens: maxTokens, temperature: 0.7 },
-    { gateway: AI_GATEWAY },
-  )) as { response?: string } | string;
+  const res = (await runWithGatewayFallback(ai, TEXT_MODEL, {
+    messages,
+    max_tokens: maxTokens,
+    temperature: 0.7,
+  })) as { response?: string } | string;
   if (typeof res === "string") return res;
   if (res && typeof res.response === "string") return res.response;
   throw new Error("unexpected text model response shape");
@@ -25,11 +50,10 @@ export async function runText(
 
 /** Run the Flux image model; returns PNG/JPEG bytes. */
 export async function runImage(ai: Ai, prompt: string): Promise<Uint8Array> {
-  const res = (await ai.run(
-    IMAGE_MODEL,
-    { prompt, steps: 6 },
-    { gateway: AI_GATEWAY },
-  )) as { image?: string } | ReadableStream;
+  const res = (await runWithGatewayFallback(ai, IMAGE_MODEL, {
+    prompt,
+    steps: 6,
+  })) as { image?: string } | ReadableStream;
   if (
     res && typeof res === "object" && "image" in res &&
     typeof res.image === "string"
