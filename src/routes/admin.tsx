@@ -44,6 +44,7 @@ function AdminShell(props: { title: string; children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="robots" content="noindex" />
         <title>{props.title}</title>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="stylesheet" href="/styles.css" />
       </head>
       <body className="admin">

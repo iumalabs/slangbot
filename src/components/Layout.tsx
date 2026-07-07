@@ -38,6 +38,14 @@ export function Layout(props: LayoutProps) {
         <title>{props.title}</title>
         <meta name="description" content={props.description} />
         <link rel="canonical" href={canonical} />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link
+          rel="icon"
+          href="/favicon-32.png"
+          type="image/png"
+          sizes="32x32"
+        />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link
           rel="alternate"
           hrefLang={props.locale === "en" ? "ru" : "en"}
@@ -123,6 +131,13 @@ export function Layout(props: LayoutProps) {
         <span className="ua-flag" aria-hidden="true"></span>
         <div className="masthead">
           <a className="wordmark" href={localePath(props.locale, "/")}>
+            <img
+              className="masthead-logo"
+              src="/logo.svg"
+              alt=""
+              width={72}
+              height={72}
+            />
             {SITE_NAME}
           </a>
           <p className="tagline">
