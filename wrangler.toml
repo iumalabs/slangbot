@@ -45,7 +45,7 @@ ACCESS_TEAM_DOMAIN = "yugai"
 # Cloudflare Access application AUD tag (public identifier, not a secret —
 # it is visible in every Access JWT payload). Copy from the Access app's
 # Overview page in the Zero Trust dashboard.
-ADMIN_ACCESS_AUD = ""
+ADMIN_ACCESS_AUD = "124c4d91816b347e640227f38be8b261ee3dc22481c6c9601ed6f114a9a288b9"
 # Feature flag for the Telegram autopost step ("true" to enable).
 TELEGRAM_ENABLED = "false"
 
