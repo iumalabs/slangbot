@@ -150,6 +150,12 @@ The production deploy command applies pending migrations **before** deploying
   preview of a schema-changing PR runs against the old schema and may error on
   the new code paths; test those locally instead (`deno task db:migrate:local` +
   `deno task dev`).
+- **GitHub workflow backup:** the "Apply D1 migrations" workflow
+  (`.github/workflows/migrate.yml`) also applies pending migrations — it fires
+  automatically when a push to `main` touches `migrations/**` and can be run
+  manually from the Actions tab. Because applying is idempotent, it coexists
+  safely with the deploy-command step; it needs a `CLOUDFLARE_API_TOKEN`
+  repository secret with the Account → D1 → Edit permission.
 
 ### Escape hatch: deploying from a local machine
 
