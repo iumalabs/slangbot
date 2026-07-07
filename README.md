@@ -127,6 +127,27 @@ Notes:
   your existing policy (e.g. the Warp-required one) to the generated
   `*-iuma.<account>.workers.dev` application. Dashboard-only switch.
 
+### Escape hatch: deploying from a local machine
+
+The Git integration is the intended path, but nothing technically prevents a
+local deploy — wrangler works as long as you are authenticated (either
+`wrangler login`, or a `CLOUDFLARE_API_TOKEN` env var with the "Edit Cloudflare
+Workers" permissions):
+
+```sh
+deno task build
+
+# upload a preview version (production untouched, prints the preview URL):
+deno run -A npm:wrangler@latest versions upload
+
+# deploy straight to production (iuma.dev) — use sparingly; it bypasses the
+# PR checks and can be overwritten by the next Workers Builds deploy from main:
+deno run -A npm:wrangler@latest deploy
+```
+
+Useful for emergencies (e.g. GitHub or Workers Builds is down) — day to day,
+push a branch and let the integration do it.
+
 ### Turnstile setup
 
 Dashboard → Turnstile → Add site → domain `iuma.dev` (plus your `*.workers.dev`
