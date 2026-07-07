@@ -18,6 +18,10 @@ on:
 
 permissions:
   contents: read
+  # The analyze step reads its own workflow-run metadata for the status
+  # report — without this it errors out even though the SARIF is already
+  # written.
+  actions: read
 
 jobs:
   analyze:
