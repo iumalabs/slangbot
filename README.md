@@ -17,15 +17,16 @@ specifiers; no `package.json`, no npm/node/npx).
 
 ## Commands
 
-| Task                                               | What it does                                            |
-| -------------------------------------------------- | ------------------------------------------------------- |
-| `deno task dev`                                    | client-bundle watcher + `wrangler dev --test-scheduled` |
-| `deno task build:client`                           | bundle `assets/client.js` (islands hydration)           |
-| `deno task deploy`                                 | build client + deploy to workers.dev                    |
-| `deno task test`                                   | full test suite (`deno test -A`)                        |
-| `deno task lint`                                   | `deno lint` + `deno fmt --check`                        |
-| `deno task db:migrate:local` / `db:migrate:remote` | apply D1 migrations                                     |
-| `deno task seed`                                   | insert one demo term into the local D1                  |
+| Task                                               | What it does                                              |
+| -------------------------------------------------- | --------------------------------------------------------- |
+| `deno task dev`                                    | client-bundle watcher + `wrangler dev --test-scheduled`   |
+| `deno task build:client`                           | bundle `assets/client.js` (islands hydration)             |
+| `deno task deploy:preview`                         | upload a version + print its preview URL (prod untouched) |
+| `deno task deploy`                                 | build client + deploy to production (iuma.dev)            |
+| `deno task test`                                   | full test suite (`deno test -A`)                          |
+| `deno task lint`                                   | `deno lint` + `deno fmt --check`                          |
+| `deno task db:migrate:local` / `db:migrate:remote` | apply D1 migrations                                       |
+| `deno task seed`                                   | insert one demo term into the local D1                    |
 
 `deno fmt`, `deno lint`, and `deno task check` are all clean.
 
@@ -75,6 +76,20 @@ needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
    `TELEGRAM_ENABLED`.
 
 6. **Deploy**: `deno task deploy` → `https://iuma.<account>.workers.dev`.
+
+   **Review-before-promote flow**: `deno task deploy:preview` uploads the
+   current code as a new _version_ without touching production and prints a
+   unique preview URL (`https://<version>-iuma.<account>.workers.dev`). Look it
+   over, then run `deno task deploy` to ship the same code to production.
+   Previews share production bindings (same D1/KV/R2), so the content matches
+   prod — avoid destructive admin actions from a preview.
+
+   To hide preview URLs behind Cloudflare Access: dashboard → Workers → iuma →
+   Settings → Domains & Routes → **Preview URLs** → enable Cloudflare Access.
+   Cloudflare creates an Access application covering
+   `*-iuma.<account>.workers.dev`; attach your existing policy (e.g. the
+   Warp-required one) to it. This is a dashboard-only switch — wrangler cannot
+   configure it.
 
 7. **Custom domain (manual, owner-only step)**: attach `iuma.dev` to the Worker
    in the dashboard (Workers → iuma → Settings → Domains & Routes). This repo
