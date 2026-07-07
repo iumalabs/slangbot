@@ -98,7 +98,12 @@ spoofed `Cf-Access-Jwt-Assertion` header is rejected).
    Self-hosted.
 2. Application domain: `iuma.dev/admin*`. During development add a second domain
    for `iuma.<account>.workers.dev/admin*`.
-3. Policy: Allow → Include → Emails → your email (one-person policy).
+3. Policy: reuse an existing policy if you already have one that fits (e.g. an
+   email allowlist combined with `Require: Warp` + `Require: Gateway`, so
+   `/admin` is only reachable from a device connected through your Zero Trust
+   WARP client) — Access lets you attach the same policy object to multiple
+   applications. Otherwise create one: Allow → Include → Emails → your email
+   (one-person policy).
 4. After saving, open the application → **Overview** → copy the **Application
    Audience (AUD) Tag** → `wrangler secret put ADMIN_ACCESS_AUD`.
 5. Set `ACCESS_TEAM_DOMAIN` in `wrangler.toml` to your team domain
@@ -111,40 +116,19 @@ trend-source list (KV), inspect the last 50 cron log rows and the seed supply.
 ### Manual trigger (don't wait for the 00:00 UTC cron)
 
 The daily pipeline is idempotent (upserts by date), so re-running it is always
-safe. Two ways to trigger it on demand:
+safe. Visit `https://iuma.dev/admin` (through your Zero Trust WARP client, per
+the policy above), click "re-run today's pipeline" — or fill in a date under
+"regenerate" to redo/backfill a specific day, optionally "illustration only".
 
-**1. From the browser** — visit `https://iuma.dev/admin`, authenticate through
-your existing Access policy, click "re-run today's pipeline" (or fill in a date
-under "regenerate" to redo/backfill a specific day, optionally "illustration
-only").
-
-**2. From GitHub Actions** (`.github/workflows/trigger-pipeline.yml`,
-`workflow_dispatch` — trigger it from the repo's Actions tab, with optional
-`date` / `imageOnly` inputs). It calls the same Access-protected endpoints via
-`curl`, authenticating as a **Cloudflare Access Service Token** (a machine
-identity for your existing Zero Trust policy — no separate secret channel to
-manage):
-
-1. Zero Trust dashboard → Access → **Service Auth** → **Service Tokens** →
-   Create Service Token (e.g. `github-actions-trigger`). Copy the **Client ID**
-   and **Client Secret** — the secret is shown once.
-2. Open the `iuma.dev/admin*` Access application (the one from the setup above)
-   → **Policies** → edit (or add) a policy that includes this rule: Include →
-   **Service Token** → the token you just created. This lets the token's
-   requests through without an interactive login; the Worker still verifies the
-   resulting JWT's signature and `aud` exactly as it does for your browser
-   session.
-3. In the GitHub repo → Settings → Secrets and variables → Actions, add:
-   - `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` — from step 1.
-   - Optionally a repo/environment **variable** `SLANGBOT_BASE_URL` if you want
-     to point at the `workers.dev` URL instead of `iuma.dev` (defaults to
-     `https://iuma.dev`).
-4. Run it: repo → Actions → "Trigger slangbot pipeline" → Run workflow.
-
-Both `/admin/run` and `/admin/regenerate` respond with JSON (instead of the
-admin HTML page) when the caller sends `Accept: application/json` — that's what
-the workflow and any other scripted caller should use; `curl` output then shows
-`{"ok":true,"message":"..."}` or `{"ok":false,"error":"..."}` directly.
+`/admin/run` and `/admin/regenerate` also respond with JSON instead of the admin
+HTML page when the caller sends `Accept: application/json` — handy for
+`curl`-ing them from your own WARP-connected machine
+(`curl -X POST https://iuma.dev/admin/run -H "Accept: application/json"`,
+authenticated the same way a browser would be, e.g. via a cached Access session
+cookie or `cloudflared access curl`). There's no GitHub Actions / Service Token
+path here on purpose — a `Require: Warp` policy has no way to pass for a cloud
+CI runner, so unattended automation isn't compatible with this policy shape; the
+admin panel is the intended trigger surface.
 
 ## Cost model (Workers AI free tier: 10,000 neurons/day)
 

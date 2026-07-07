@@ -171,9 +171,10 @@ admin.get("/admin", async (c) => {
 });
 
 /**
- * Machine callers (curl from a GitHub Actions workflow, a Cloudflare Access
- * Service Token, etc.) send `Accept: application/json` or `?format=json` to
- * get a scriptable response instead of the admin HTML page.
+ * Callers scripting the trigger (e.g. `curl` from a WARP-connected machine,
+ * authenticated the same way a browser session would be) send
+ * `Accept: application/json` or `?format=json` to get a scriptable response
+ * instead of the admin HTML page.
  */
 function wantsJson(
   c: {

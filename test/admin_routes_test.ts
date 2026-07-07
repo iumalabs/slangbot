@@ -1,7 +1,7 @@
 /**
  * Admin route tests: Access JWT is enforced on every /admin/* request, and
- * the manual-trigger endpoints (used by GitHub Actions / curl) respond with
- * JSON when the caller asks for it.
+ * the manual-trigger endpoints respond with JSON for scripted callers
+ * (curl from a WARP-connected machine) when asked for it.
  */
 import { assert, assertEquals } from "@std/assert";
 import { admin } from "../src/routes/admin.tsx";
@@ -96,7 +96,7 @@ Deno.test("admin: valid JWT reaches the dashboard", async () => {
   assertEquals(res.status, 200);
 });
 
-Deno.test("admin/run: JSON callers get a JSON response (curl / GitHub Actions)", async () => {
+Deno.test("admin/run: JSON callers get a JSON response (scripted curl)", async () => {
   const { env, validToken } = await setup();
 
   // Harvest hits real trend-source URLs; stub fetch so this test stays fast
