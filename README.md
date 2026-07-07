@@ -29,6 +29,12 @@ specifiers; no `package.json`, no npm/node/npx).
 
 `deno fmt`, `deno lint`, and `deno task check` are all clean.
 
+**Pre-commit hook**: run `deno task hooks:install` once after cloning — it
+points `core.hooksPath` at the committed `.githooks/` directory, so every
+`git commit` runs the same gate as CI (fmt check, lint, typecheck, AI isolation,
+tests) before the commit is created. Bypass in an emergency with
+`git commit --no-verify`.
+
 There is intentionally **no local deploy task** — all deploys go through the
 Cloudflare Workers ↔ GitHub integration (see "Deploys" below).
 
