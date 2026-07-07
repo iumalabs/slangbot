@@ -42,12 +42,15 @@ crons = ["0 0 * * *"]
 TURNSTILE_SITE_KEY = "0x4AAAAAADxJh02sjUerG64f"
 # Your Cloudflare Zero Trust team domain, e.g. "myteam.cloudflareaccess.com".
 ACCESS_TEAM_DOMAIN = "yugai"
+# Cloudflare Access application AUD tag (public identifier, not a secret —
+# it is visible in every Access JWT payload). Copy from the Access app's
+# Overview page in the Zero Trust dashboard.
+ADMIN_ACCESS_AUD = ""
 # Feature flag for the Telegram autopost step ("true" to enable).
 TELEGRAM_ENABLED = "false"
 
 # Secrets (set via `wrangler secret put <NAME>`, never committed):
 #   TURNSTILE_SECRET      — Turnstile secret key
 #   COOKIE_HMAC_SECRET    — random string used to sign visitor cookies
-#   ADMIN_ACCESS_AUD      — Cloudflare Access application AUD tag
 #   TELEGRAM_BOT_TOKEN    — optional, only if TELEGRAM_ENABLED = "true"
 #   TELEGRAM_CHANNEL_ID   — optional, only if TELEGRAM_ENABLED = "true"
