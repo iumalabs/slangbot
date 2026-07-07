@@ -1,6 +1,11 @@
 # Static security analysis (CodeQL) for the TypeScript/JavaScript codebase.
-# Runs on PRs to main, pushes to main, and a weekly schedule so newly added
-# CodeQL queries retro-scan the existing code.
+#
+# This repo is private on a personal plan, where uploading results to the
+# GitHub Code Scanning service is unavailable (it needs paid Code Security).
+# So instead of uploading, the job inspects the SARIF output itself and
+# fails when CodeQL reports any finding. If the repo ever goes public,
+# switch `upload: never` off and add `security-events: write` back to get
+# the Security-tab experience.
 name: CodeQL
 
 on:
@@ -17,10 +22,6 @@ permissions:
 jobs:
   analyze:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
 
     steps:
       - uses: actions/checkout@v4
@@ -35,3 +36,19 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:javascript-typescript"
+          upload: never
+          output: codeql-results
+
+      - name: Fail on CodeQL findings
+        run: |
+          count=$(jq -s '[.[].runs[].results[]] | length' codeql-results/*.sarif)
+          echo "CodeQL findings: ${count}"
+          if [ "$count" -gt 0 ]; then
+            jq -r -s '
+              .[].runs[] as $run |
+              $run.results[] |
+              "\(.ruleId) — \(.locations[0].physicalLocation.artifactLocation.uri):\(.locations[0].physicalLocation.region.startLine): \(.message.text)"
+            ' codeql-results/*.sarif
+            echo "::error::CodeQL reported ${count} finding(s) — see the list above"
+            exit 1
+          fi
