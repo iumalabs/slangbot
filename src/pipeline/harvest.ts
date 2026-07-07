@@ -44,11 +44,25 @@ export function parseFeedTitles(xml: string): string[] {
     /<title(?:\s[^>]*)?>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(xml)) !== null) {
-    const text = m[1].replace(/<[^>]+>/g, "").trim();
+    // Strip markup until the text is stable (a single pass can leave a tag
+    // behind when tags nest into each other after a removal).
+    let text = m[1];
+    let previous;
+    do {
+      previous = text;
+      text = text.replace(/<[^>]*>/g, "");
+    } while (text !== previous);
+    text = text.trim();
     if (text) titles.push(text);
   }
   return titles.slice(1, 40); // skip channel title
 }
+
+/**
+ * Quoted-phrase matcher: curly “…”, straight "…", or '…' — captured without
+ * the quotes so no post-trim is needed.
+ */
+const QUOTED_RE = /“([^”]{2,40})”|"([^"]{2,40})"|'([^']{2,40})'/g;
 
 /**
  * Pull candidate phrases out of feed titles: quoted phrases and
@@ -57,10 +71,9 @@ export function parseFeedTitles(xml: string): string[] {
 export function extractTermsFromTitles(titles: string[]): string[] {
   const out: string[] = [];
   for (const title of titles) {
-    const quoted =
-      title.match(/[""]([^""]{2,40})[""]|"([^"]{2,40})"|'([^']{2,40})'/g) ?? [];
-    for (const q of quoted) {
-      out.push(q.replace(/^[""'"]|[""'"]$/g, "").trim());
+    for (const m of title.matchAll(QUOTED_RE)) {
+      const phrase = m[1] ?? m[2] ?? m[3];
+      if (phrase) out.push(phrase.trim());
     }
     const meanMatch = title.match(
       /what (?:does|is) ([\w' -]{2,40}?) (?:mean|slang|about)/i,

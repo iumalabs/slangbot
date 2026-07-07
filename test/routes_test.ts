@@ -170,8 +170,8 @@ Deno.test("suggest: rate limit allows 3 per day then 429", async () => {
   // Stub Turnstile verification (network call) to always succeed.
   const realFetch = globalThis.fetch;
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input instanceof Request ? input.url : input);
-    if (url.includes("challenges.cloudflare.com")) {
+    const url = new URL(String(input instanceof Request ? input.url : input));
+    if (url.hostname === "challenges.cloudflare.com") {
       return Promise.resolve(Response.json({ success: true }));
     }
     return realFetch(input, init);
