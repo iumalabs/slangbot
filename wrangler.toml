@@ -9,8 +9,8 @@ compatibility_flags = ["nodejs_compat"]
 
 workers_dev = false
 # Versioned preview URLs (<version>-iuma.<subdomain>.workers.dev) for the
-# review-before-promote flow: `deno task deploy:preview` uploads a version
-# without touching production; `deno task deploy` ships to iuma.dev.
+# review-before-promote flow: `deno task deploy` uploads a version without
+# touching production; `deno task deploy:production` ships to iuma.dev.
 # Protect previews with Access in the dashboard (see README).
 preview_urls = true
 

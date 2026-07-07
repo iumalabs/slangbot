@@ -21,8 +21,8 @@ specifiers; no `package.json`, no npm/node/npx).
 | -------------------------------------------------- | --------------------------------------------------------- |
 | `deno task dev`                                    | client-bundle watcher + `wrangler dev --test-scheduled`   |
 | `deno task build:client`                           | bundle `assets/client.js` (islands hydration)             |
-| `deno task deploy:preview`                         | upload a version + print its preview URL (prod untouched) |
-| `deno task deploy`                                 | build client + deploy to production (iuma.dev)            |
+| `deno task deploy`                                 | upload a version + print its preview URL (prod untouched) |
+| `deno task deploy:production`                      | build client + deploy to production (iuma.dev)            |
 | `deno task test`                                   | full test suite (`deno test -A`)                          |
 | `deno task lint`                                   | `deno lint` + `deno fmt --check`                          |
 | `deno task db:migrate:local` / `db:migrate:remote` | apply D1 migrations                                       |
@@ -75,14 +75,14 @@ needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
    every Access JWT payload, so it lives in vars, not secrets),
    `TELEGRAM_ENABLED`.
 
-6. **Deploy**: `deno task deploy` → `https://iuma.<account>.workers.dev`.
-
-   **Review-before-promote flow**: `deno task deploy:preview` uploads the
-   current code as a new _version_ without touching production and prints a
-   unique preview URL (`https://<version>-iuma.<account>.workers.dev`). Look it
-   over, then run `deno task deploy` to ship the same code to production.
-   Previews share production bindings (same D1/KV/R2), so the content matches
-   prod — avoid destructive admin actions from a preview.
+6. **Deploy — preview first, production second.** `deno task deploy` (the
+   default) uploads the current working tree as a new Worker _version_ without
+   touching production and prints a unique preview URL
+   (`https://<version>-iuma.<account>.workers.dev`). Look it over, then run
+   `deno task deploy:production` to ship the same code to iuma.dev. Both tasks
+   deploy whatever is on disk — the git branch is irrelevant. Previews share
+   production bindings (same D1/KV/R2), so the content matches prod — avoid
+   destructive admin actions from a preview.
 
    To hide preview URLs behind Cloudflare Access: dashboard → Workers → iuma →
    Settings → Domains & Routes → **Preview URLs** → enable Cloudflare Access.

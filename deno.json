@@ -3,8 +3,8 @@
   "tasks": {
     "dev": "deno install && deno run -A scripts/dev.ts",
     "build:client": "deno run -A scripts/build-client.ts",
-    "deploy:preview": "deno install && deno task build:client && deno run -A npm:wrangler@latest versions upload",
-    "deploy": "deno install && deno task build:client && deno run -A npm:wrangler@latest deploy",
+    "deploy": "deno install && deno task build:client && deno run -A npm:wrangler@latest versions upload",
+    "deploy:production": "deno install && deno task build:client && deno run -A npm:wrangler@latest deploy",
     "test": "deno test -A",
     "lint": "deno lint && deno fmt --check",
     "check": "deno check src/index.tsx src/client/entry-client.tsx",
