@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
+  aria-label="slangbot logo">
+  <defs>
+    <linearGradient id="amber" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F7D78E" />
+      <stop offset="0.55" stop-color="#F0C05A" />
+      <stop offset="1" stop-color="#D9A53C" />
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45" />
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <!-- antenna -->
+  <rect x="30.6" y="7" width="2.8" height="8" rx="1.4" fill="url(#amber)" />
+  <circle cx="32" cy="6" r="3.2" fill="url(#amber)" />
+  <!-- speech bubble = robot head -->
+  <path fill="url(#amber)"
+    d="M21 14h22a9 9 0 0 1 9 9v12a9 9 0 0 1-9 9H29.5L18 55.5V44h0A9 9 0 0 1 12 35V23a9 9 0 0 1 9-9z" />
+  <!-- glossy sheen -->
+  <path fill="url(#sheen)"
+    d="M21 15.5h22a7.5 7.5 0 0 1 7.5 7.5v3.5h-37V23a7.5 7.5 0 0 1 7.5-7.5z" />
+  <!-- eyes -->
+  <rect x="22.5" y="23" width="6.5" height="9" rx="2.6" fill="#0E162A" />
+  <rect x="35" y="23" width="6.5" height="9" rx="2.6" fill="#0E162A" />
+  <!-- mouth -->
+  <rect x="26" y="35.5" width="12" height="3" rx="1.5" fill="#0E162A" />
+</svg>
