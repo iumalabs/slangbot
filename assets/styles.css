@@ -755,6 +755,13 @@ button.choice-btn:disabled {
   font-size: 12px;
 }
 
+.footer-copyright {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin-top: 6px;
+}
+
 /* --- admin --- */
 .admin-main {
   max-width: 900px;

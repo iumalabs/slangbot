@@ -141,6 +141,9 @@ export function Layout(props: LayoutProps) {
               {ui.footerRss}
             </a>
           </p>
+          <p className="footer-copyright">
+            © {new Date().getUTCFullYear()} {SITE_NAME}
+          </p>
         </footer>
         <script type="module" src="/client.js"></script>
       </body>
