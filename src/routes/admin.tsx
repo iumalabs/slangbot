@@ -70,7 +70,7 @@ admin.get("/admin", async (c) => {
   const approvedCount = await countSuggestions(c.env.DB, "approved");
 
   return await renderPage(
-    <AdminShell title="iuma admin">
+    <AdminShell title={`${SITE_NAME} admin`}>
       <section className="admin-section">
         <h2>pipeline</h2>
         <p>

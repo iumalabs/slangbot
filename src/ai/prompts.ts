@@ -1,5 +1,7 @@
 /** Prompt templates for the daily pipeline. English-only outputs except where noted. */
 
+import { SITE_NAME } from "../config.ts";
+
 export function pickPrompt(
   candidates: string[],
   publishedTerms: string[],
@@ -7,7 +9,7 @@ export function pickPrompt(
 ): { system: string; user: string } {
   return {
     system:
-      `You are the editorial brain of "iuma", a playful, ironic, extremely-online daily
+      `You are the editorial brain of "${SITE_NAME}", a playful, ironic, extremely-online daily
 dictionary of American/internet slang (Reddit, X, TikTok-era, Urban Dictionary lineage).
 You pick exactly ONE term to publish today.
 
@@ -36,7 +38,7 @@ Pick today's term. STRICT JSON only.`,
 export function entryPrompt(term: string): { system: string; user: string } {
   return {
     system:
-      `You write entries for "iuma", a playful, ironic, extremely-online bilingual dictionary
+      `You write entries for "${SITE_NAME}", a playful, ironic, extremely-online bilingual dictionary
 of American/internet slang. Voice: witty, dry, a little too aware of internet culture.
 English is written first; Russian is a native-quality adaptation for Russian speakers
 learning American internet culture — natural Russian, NOT word-for-word translation,

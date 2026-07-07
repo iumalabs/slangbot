@@ -1,7 +1,9 @@
-# iuma
+# slangbot
 
 **the Internet's Unofficial Manual of Argot** — a fully autonomous daily
-dictionary of American/internet slang at [iuma.dev](https://iuma.dev).
+dictionary of American/internet slang, deployed at [iuma.dev](https://iuma.dev).
+"slangbot" is the product name (see `SITE_NAME` in `src/config.ts`); "iuma.dev"
+is just the domain the owner attached to it.
 
 Every day at 00:00 UTC a cron job picks one trending slang term, writes a full
 bilingual (EN/RU) entry, generates two plausible fake definitions for the

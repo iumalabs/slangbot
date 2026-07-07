@@ -1,5 +1,10 @@
-/** Owner-editable brand constants. */
-export const SITE_NAME = "iuma";
+/**
+ * Owner-editable brand constants.
+ * SITE_NAME is the product name (shown in the wordmark, titles, share
+ * strings). It is intentionally distinct from the domain — see
+ * CANONICAL_ORIGIN / SHARE_HOST below, which stay "iuma.dev".
+ */
+export const SITE_NAME = "slangbot";
 export const TAGLINE = "the Internet's Unofficial Manual of Argot";
 
 /**
