@@ -21,7 +21,7 @@ specifiers; no `package.json`, no npm/node/npx).
 | -------------------------------------------------- | ------------------------------------------------------- |
 | `deno task dev`                                    | client-bundle watcher + `wrangler dev --test-scheduled` |
 | `deno task build:client`                           | bundle `assets/client.js` (islands hydration)           |
-| `deno task deploy`                                 | build client + deploy to workers.dev                    |
+| `deno task build`                                  | full build for Workers Builds (deno install + client)   |
 | `deno task test`                                   | full test suite (`deno test -A`)                        |
 | `deno task lint`                                   | `deno lint` + `deno fmt --check`                        |
 | `deno task db:migrate:local` / `db:migrate:remote` | apply D1 migrations                                     |
@@ -29,7 +29,16 @@ specifiers; no `package.json`, no npm/node/npx).
 
 `deno fmt`, `deno lint`, and `deno task check` are all clean.
 
-Note: `deno install` (run automatically by `dev`/`deploy`) materializes a
+**Pre-commit hook**: run `deno task hooks:install` once after cloning — it
+points `core.hooksPath` at the committed `.githooks/` directory, so every
+`git commit` runs the same gate as CI (fmt check, lint, typecheck, AI isolation,
+tests) before the commit is created. Bypass in an emergency with
+`git commit --no-verify`.
+
+There is intentionally **no local deploy task** — all deploys go through the
+Cloudflare Workers ↔ GitHub integration (see "Deploys" below).
+
+Note: `deno install` (run automatically by `dev`/`build`) materializes a
 gitignored `node_modules` from the `deno.json` import map — wrangler's bundler
 needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
 `package.json`.
@@ -74,12 +83,106 @@ needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
    every Access JWT payload, so it lives in vars, not secrets),
    `TELEGRAM_ENABLED`.
 
-6. **Deploy**: `deno task deploy` → `https://iuma.<account>.workers.dev`.
+6. **Deploys — Cloudflare Workers ↔ GitHub integration only** (see the "Deploys"
+   section below). There is no local deploy path.
 
 7. **Custom domain (manual, owner-only step)**: attach `iuma.dev` to the Worker
    in the dashboard (Workers → iuma → Settings → Domains & Routes). This repo
    deliberately configures no routes. `.dev` is HSTS-preloaded, so the site is
    HTTPS-only; all generated URLs already use `https://iuma.dev`.
+
+## Deploys (Cloudflare Workers ↔ GitHub integration)
+
+All deploys run through **Workers Builds** — Cloudflare's own Git integration.
+Nothing deploys from a laptop:
+
+- push to **`main`** → Workers Builds builds and deploys to production
+  (iuma.dev);
+- push to **any other branch** → Workers Builds uploads a _version_ and posts
+  its preview URL (`https://<version>-iuma.<account>.workers.dev`) on the
+  commit/PR — production stays untouched;
+- GitHub Actions (`ci.yml`, CodeQL, gitleaks) remain the PR quality gates; they
+  do not deploy anything.
+
+One-time setup in the dashboard (Workers & Pages → iuma → Settings → Build →
+**Connect** a Git repository), then fill the build configuration in:
+
+| Field                                | Value                                                                      |
+| ------------------------------------ | -------------------------------------------------------------------------- |
+| Git repository                       | `maksimyugai/iumadev`                                                      |
+| Production branch                    | `main`                                                                     |
+| Build command                        | `deno task build`                                                          |
+| Deploy command                       | `npx wrangler d1 migrations apply iuma-db --remote && npx wrangler deploy` |
+| Non-production branch deploy command | `npx wrangler versions upload`                                             |
+| Root directory                       | `/`                                                                        |
+
+Notes:
+
+- `deno task build` runs `deno install` (materializes `node_modules` from the
+  `deno.json` import map so wrangler can resolve `react`/`hono`/`workers-og`)
+  and bundles `assets/client.js`. The Workers Builds image ships Deno; if the
+  preinstalled version is ever too old, prepend an install to the build command:
+  `curl -fsSL https://deno.land/install.sh | sh -s -- -y && export PATH="$HOME/.deno/bin:$PATH" && deno task build`.
+- The deploy commands use `npx wrangler` (not a Deno specifier) because they run
+  inside Cloudflare's build image, not on the Deno-only local toolchain — the
+  repo itself still contains no npm artifacts.
+- Previews share production bindings (same D1/KV/R2), so a preview shows real
+  content — avoid destructive admin actions from a preview URL.
+- To hide preview URLs behind Cloudflare Access: Workers → iuma → Settings →
+  Domains & Routes → **Preview URLs** → enable Cloudflare Access, then attach
+  your existing policy (e.g. the Warp-required one) to the generated
+  `*-iuma.<account>.workers.dev` application. Dashboard-only switch.
+
+### D1 migrations in this flow
+
+The production deploy command applies pending migrations **before** deploying
+(`d1 migrations apply … && wrangler deploy`). This is safe and automatic:
+
+- **Idempotent.** D1 records applied migrations in its `d1_migrations` table, so
+  the command is a no-op on deploys that add no new migration files, and it
+  never re-runs an applied one.
+- **Fail-safe ordering.** The `&&` means a failing migration blocks the deploy —
+  old code keeps running against the old schema instead of new code crashing
+  against a half-migrated one.
+- **Write migrations to be backward-compatible.** Between "migration applied"
+  and "new code live" the _old_ code briefly runs on the _new_ schema — and a
+  rollback re-creates that state for longer. Additive changes (new tables,
+  `ADD COLUMN` with a default) are always fine; destructive ones (drop / rename)
+  need a two-PR dance: first ship code that works with both schemas, then drop.
+  D1 migrations have no "down" — forward-only.
+- **Previews don't migrate.** Non-production branches share the production D1,
+  so the preview command deliberately skips `migrations apply` — a branch's
+  un-merged migration must not mutate the production database. The flip side: a
+  preview of a schema-changing PR runs against the old schema and may error on
+  the new code paths; test those locally instead (`deno task db:migrate:local` +
+  `deno task dev`).
+- **GitHub workflow backup:** the "Apply D1 migrations" workflow
+  (`.github/workflows/migrate.yml`) also applies pending migrations — it fires
+  automatically when a push to `main` touches `migrations/**` and can be run
+  manually from the Actions tab. Because applying is idempotent, it coexists
+  safely with the deploy-command step; it needs a `CLOUDFLARE_API_TOKEN`
+  repository secret with the Account → D1 → Edit permission.
+
+### Escape hatch: deploying from a local machine
+
+The Git integration is the intended path, but nothing technically prevents a
+local deploy — wrangler works as long as you are authenticated (either
+`wrangler login`, or a `CLOUDFLARE_API_TOKEN` env var with the "Edit Cloudflare
+Workers" permissions):
+
+```sh
+deno task build
+
+# upload a preview version (production untouched, prints the preview URL):
+deno run -A npm:wrangler@latest versions upload
+
+# deploy straight to production (iuma.dev) — use sparingly; it bypasses the
+# PR checks and can be overwritten by the next Workers Builds deploy from main:
+deno run -A npm:wrangler@latest deploy
+```
+
+Useful for emergencies (e.g. GitHub or Workers Builds is down) — day to day,
+push a branch and let the integration do it.
 
 ### Turnstile setup
 

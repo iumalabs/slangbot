@@ -1,0 +1,23 @@
+#!/bin/sh
+# Pre-commit gate: the same checks CI runs, so broken commits never leave the
+# machine. Install once with `deno task hooks:install`.
+# Bypass in an emergency with `git commit --no-verify`.
+
+set -e
+
+echo "pre-commit: format check"
+deno fmt --check
+
+echo "pre-commit: lint"
+deno lint
+
+echo "pre-commit: typecheck"
+deno task check
+
+echo "pre-commit: AI isolation"
+deno task check:ai
+
+echo "pre-commit: tests"
+deno test -A
+
+echo "pre-commit: all checks passed"

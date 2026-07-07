@@ -1,0 +1,62 @@
+# Static security analysis (CodeQL) for the TypeScript/JavaScript codebase.
+#
+# This repo is private on a personal plan, where uploading results to the
+# GitHub Code Scanning service is unavailable (it needs paid Code Security).
+# So instead of uploading, the job inspects the SARIF output itself and
+# fails when CodeQL reports any finding. If the repo ever goes public,
+# switch `upload: never` off and add `security-events: write` back to get
+# the Security-tab experience.
+name: CodeQL
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  schedule:
+    - cron: "30 4 * * 1"
+
+permissions:
+  contents: read
+  # The analyze step reads its own workflow-run metadata for the status
+  # report — without this it errors out even though the SARIF is already
+  # written.
+  actions: read
+  # Read-only: lets the action query its API for feature flags. A residual
+  # "Code scanning is not enabled" notice may remain on this private repo —
+  # that part is not fixable without paid Code Security.
+  security-events: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:javascript-typescript"
+          upload: never
+          output: codeql-results
+
+      - name: Fail on CodeQL findings
+        run: |
+          count=$(jq -s '[.[].runs[].results[]] | length' codeql-results/*.sarif)
+          echo "CodeQL findings: ${count}"
+          if [ "$count" -gt 0 ]; then
+            jq -r -s '
+              .[].runs[] as $run |
+              $run.results[] |
+              "\(.ruleId) — \(.locations[0].physicalLocation.artifactLocation.uri):\(.locations[0].physicalLocation.region.startLine): \(.message.text)"
+            ' codeql-results/*.sarif
+            echo "::error::CodeQL reported ${count} finding(s) — see the list above"
+            exit 1
+          fi
