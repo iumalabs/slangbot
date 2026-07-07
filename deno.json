@@ -8,6 +8,7 @@
     "test": "deno test -A",
     "lint": "deno lint && deno fmt --check",
     "check": "deno check src/index.tsx src/client/entry-client.tsx",
+    "check:ai": "deno run -A scripts/check-ai-isolation.ts",
     "db:migrate:local": "deno run -A npm:wrangler@latest d1 migrations apply iuma-db --local",
     "db:migrate:remote": "deno run -A npm:wrangler@latest d1 migrations apply iuma-db --remote",
     "seed": "deno run -A npm:wrangler@latest d1 execute iuma-db --local --file=scripts/seed-demo.sql"

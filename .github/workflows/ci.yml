@@ -1,0 +1,73 @@
+# PR / main checks. Replaces the old deno.yml.
+#
+# Recommended branch protection for `main` (GitHub → Settings → Branches):
+# require a PR before merging with these checks required:
+#   static, test, build, CodeQL, gitleaks.
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  # Formatting, lint rules, and full typecheck.
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@61fe2df320078202e33d7d5ad347e7dcfa0e8f31 # v1.1.2
+        with:
+          deno-version: v2.x
+
+      - name: Format check
+        run: deno fmt --check
+
+      - name: Lint
+        run: deno lint
+
+      - name: Typecheck
+        run: deno task check
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@61fe2df320078202e33d7d5ad347e7dcfa0e8f31 # v1.1.2
+        with:
+          deno-version: v2.x
+
+      - name: Run tests
+        run: deno test -A
+
+  # Client bundle builds, stays within the 60 KB gzip budget, and no
+  # Workers AI call leaks onto a user-facing request path.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@61fe2df320078202e33d7d5ad347e7dcfa0e8f31 # v1.1.2
+        with:
+          deno-version: v2.x
+
+      - name: Build client bundle
+        run: deno task build:client
+
+      - name: Enforce bundle size budget (60 KB gzipped)
+        run: |
+          size=$(gzip -c assets/client.js | wc -c)
+          echo "client.js gzipped: ${size} bytes"
+          if [ "$size" -gt 61440 ]; then
+            echo "::error::client bundle exceeds the 60 KB gzip budget"
+            exit 1
+          fi
+
+      - name: AI isolation check
+        run: deno run -A scripts/check-ai-isolation.ts
