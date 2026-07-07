@@ -1,4 +1,5 @@
 {
+  "nodeModulesDir": "auto",
   "tasks": {
     "dev": "deno install && deno run -A scripts/dev.ts",
     "build:client": "deno run -A scripts/build-client.ts",
@@ -39,6 +40,5 @@
       "tags": ["recommended"],
       "include": ["no-sloppy-imports", "no-slow-types"]
     }
-  },
-  "nodeModulesDir": "auto"
+  }
 }
