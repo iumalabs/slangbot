@@ -10,6 +10,8 @@ on:
 
 permissions:
   contents: read
+  # gitleaks-action lists the PR's commits via the API on pull_request events.
+  pull-requests: read
 
 jobs:
   scan:
