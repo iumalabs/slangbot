@@ -17,20 +17,22 @@ specifiers; no `package.json`, no npm/node/npx).
 
 ## Commands
 
-| Task                                               | What it does                                              |
-| -------------------------------------------------- | --------------------------------------------------------- |
-| `deno task dev`                                    | client-bundle watcher + `wrangler dev --test-scheduled`   |
-| `deno task build:client`                           | bundle `assets/client.js` (islands hydration)             |
-| `deno task deploy`                                 | upload a version + print its preview URL (prod untouched) |
-| `deno task deploy:production`                      | deploy to iuma.dev (CI path; locally requires clean main) |
-| `deno task test`                                   | full test suite (`deno test -A`)                          |
-| `deno task lint`                                   | `deno lint` + `deno fmt --check`                          |
-| `deno task db:migrate:local` / `db:migrate:remote` | apply D1 migrations                                       |
-| `deno task seed`                                   | insert one demo term into the local D1                    |
+| Task                                               | What it does                                            |
+| -------------------------------------------------- | ------------------------------------------------------- |
+| `deno task dev`                                    | client-bundle watcher + `wrangler dev --test-scheduled` |
+| `deno task build:client`                           | bundle `assets/client.js` (islands hydration)           |
+| `deno task build`                                  | full build for Workers Builds (deno install + client)   |
+| `deno task test`                                   | full test suite (`deno test -A`)                        |
+| `deno task lint`                                   | `deno lint` + `deno fmt --check`                        |
+| `deno task db:migrate:local` / `db:migrate:remote` | apply D1 migrations                                     |
+| `deno task seed`                                   | insert one demo term into the local D1                  |
 
 `deno fmt`, `deno lint`, and `deno task check` are all clean.
 
-Note: `deno install` (run automatically by `dev`/`deploy`) materializes a
+There is intentionally **no local deploy task** — all deploys go through the
+Cloudflare Workers ↔ GitHub integration (see "Deploys" below).
+
+Note: `deno install` (run automatically by `dev`/`build`) materializes a
 gitignored `node_modules` from the `deno.json` import map — wrangler's bundler
 needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
 `package.json`.
@@ -75,35 +77,55 @@ needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
    every Access JWT payload, so it lives in vars, not secrets),
    `TELEGRAM_ENABLED`.
 
-6. **Deploy — preview locally, production from main via CI.** `deno task deploy`
-   (the default) uploads the current working tree as a new Worker _version_
-   without touching production and prints a unique preview URL
-   (`https://<version>-iuma.<account>.workers.dev`) — works from any branch,
-   uncommitted changes included. Previews share production bindings (same
-   D1/KV/R2), so the content matches prod — avoid destructive admin actions from
-   a preview.
-
-   Production ships through the **"Deploy production" GitHub workflow**
-   (`.github/workflows/deploy-production.yml`): every push to `main` runs lint +
-   tests and then `deno task deploy:production` (also triggerable manually from
-   the Actions tab). One-time setup: create a Cloudflare API token (dashboard →
-   My Profile → API Tokens → "Edit Cloudflare Workers" template) and add it as
-   the `CLOUDFLARE_API_TOKEN` repository secret. Running
-   `deno task deploy:production` locally is guarded: it refuses unless you are
-   on a committed, clean `main` — so the workflow is the single practical path
-   to production.
-
-   To hide preview URLs behind Cloudflare Access: dashboard → Workers → iuma →
-   Settings → Domains & Routes → **Preview URLs** → enable Cloudflare Access.
-   Cloudflare creates an Access application covering
-   `*-iuma.<account>.workers.dev`; attach your existing policy (e.g. the
-   Warp-required one) to it. This is a dashboard-only switch — wrangler cannot
-   configure it.
+6. **Deploys — Cloudflare Workers ↔ GitHub integration only** (see the "Deploys"
+   section below). There is no local deploy path.
 
 7. **Custom domain (manual, owner-only step)**: attach `iuma.dev` to the Worker
    in the dashboard (Workers → iuma → Settings → Domains & Routes). This repo
    deliberately configures no routes. `.dev` is HSTS-preloaded, so the site is
    HTTPS-only; all generated URLs already use `https://iuma.dev`.
+
+## Deploys (Cloudflare Workers ↔ GitHub integration)
+
+All deploys run through **Workers Builds** — Cloudflare's own Git integration.
+Nothing deploys from a laptop:
+
+- push to **`main`** → Workers Builds builds and deploys to production
+  (iuma.dev);
+- push to **any other branch** → Workers Builds uploads a _version_ and posts
+  its preview URL (`https://<version>-iuma.<account>.workers.dev`) on the
+  commit/PR — production stays untouched;
+- GitHub Actions (`ci.yml`, CodeQL, gitleaks) remain the PR quality gates; they
+  do not deploy anything.
+
+One-time setup in the dashboard (Workers & Pages → iuma → Settings → Build →
+**Connect** a Git repository), then fill the build configuration in:
+
+| Field                                | Value                          |
+| ------------------------------------ | ------------------------------ |
+| Git repository                       | `maksimyugai/iumadev`          |
+| Production branch                    | `main`                         |
+| Build command                        | `deno task build`              |
+| Deploy command                       | `npx wrangler deploy`          |
+| Non-production branch deploy command | `npx wrangler versions upload` |
+| Root directory                       | `/`                            |
+
+Notes:
+
+- `deno task build` runs `deno install` (materializes `node_modules` from the
+  `deno.json` import map so wrangler can resolve `react`/`hono`/`workers-og`)
+  and bundles `assets/client.js`. The Workers Builds image ships Deno; if the
+  preinstalled version is ever too old, prepend an install to the build command:
+  `curl -fsSL https://deno.land/install.sh | sh -s -- -y && export PATH="$HOME/.deno/bin:$PATH" && deno task build`.
+- The deploy commands use `npx wrangler` (not a Deno specifier) because they run
+  inside Cloudflare's build image, not on the Deno-only local toolchain — the
+  repo itself still contains no npm artifacts.
+- Previews share production bindings (same D1/KV/R2), so a preview shows real
+  content — avoid destructive admin actions from a preview URL.
+- To hide preview URLs behind Cloudflare Access: Workers → iuma → Settings →
+  Domains & Routes → **Preview URLs** → enable Cloudflare Access, then attach
+  your existing policy (e.g. the Warp-required one) to the generated
+  `*-iuma.<account>.workers.dev` application. Dashboard-only switch.
 
 ### Turnstile setup
 

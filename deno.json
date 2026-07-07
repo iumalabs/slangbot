@@ -2,9 +2,8 @@
   "nodeModulesDir": "auto",
   "tasks": {
     "dev": "deno install && deno run -A scripts/dev.ts",
+    "build": "deno install && deno run -A scripts/build-client.ts",
     "build:client": "deno run -A scripts/build-client.ts",
-    "deploy": "deno install && deno task build:client && deno run -A npm:wrangler@latest versions upload",
-    "deploy:production": "deno install && deno task build:client && deno run -A scripts/deploy-production.ts",
     "test": "deno test -A",
     "lint": "deno lint && deno fmt --check",
     "check": "deno check src/index.tsx src/client/entry-client.tsx",
