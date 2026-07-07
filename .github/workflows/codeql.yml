@@ -22,6 +22,10 @@ permissions:
   # report — without this it errors out even though the SARIF is already
   # written.
   actions: read
+  # Read-only: lets the action query its API for feature flags. A residual
+  # "Code scanning is not enabled" notice may remain on this private repo —
+  # that part is not fixable without paid Code Security.
+  security-events: read
 
 jobs:
   analyze:
@@ -31,13 +35,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
           queries: security-and-quality
 
       - name: Analyze
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:javascript-typescript"
           upload: never
