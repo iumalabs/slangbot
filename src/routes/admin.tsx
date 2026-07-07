@@ -170,15 +170,34 @@ admin.get("/admin", async (c) => {
   );
 });
 
+/**
+ * Machine callers (curl from a GitHub Actions workflow, a Cloudflare Access
+ * Service Token, etc.) send `Accept: application/json` or `?format=json` to
+ * get a scriptable response instead of the admin HTML page.
+ */
+function wantsJson(
+  c: {
+    req: {
+      header(n: string): string | undefined;
+      query(n: string): string | undefined;
+    };
+  },
+): boolean {
+  return c.req.query("format") === "json" ||
+    (c.req.header("accept") ?? "").includes("application/json");
+}
+
 admin.post("/admin/run", async (c) => {
   try {
     const msg = await runDailyPipeline(c.env, { force: true });
+    if (wantsJson(c)) return c.json({ ok: true, message: msg });
     return await renderPage(
       <AdminShell title="pipeline run">
         <p>{msg}</p>
       </AdminShell>,
     );
   } catch (e) {
+    if (wantsJson(c)) return c.json({ ok: false, error: String(e) }, 500);
     return await renderPage(
       <AdminShell title="pipeline run">
         <p>pipeline failed: {String(e)}</p>
@@ -192,15 +211,20 @@ admin.post("/admin/regenerate", async (c) => {
   const form = await c.req.formData();
   const date = String(form.get("date") ?? "");
   const imageOnly = form.get("imageOnly") === "1";
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return c.text("bad date", 400);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    if (wantsJson(c)) return c.json({ ok: false, error: "bad date" }, 400);
+    return c.text("bad date", 400);
+  }
   try {
     const msg = await runDailyPipeline(c.env, { date, force: true, imageOnly });
+    if (wantsJson(c)) return c.json({ ok: true, message: msg });
     return await renderPage(
       <AdminShell title="regenerate">
         <p>{msg}</p>
       </AdminShell>,
     );
   } catch (e) {
+    if (wantsJson(c)) return c.json({ ok: false, error: String(e) }, 500);
     return await renderPage(
       <AdminShell title="regenerate">
         <p>failed: {String(e)}</p>

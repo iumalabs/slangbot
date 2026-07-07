@@ -108,6 +108,44 @@ Admin features: re-run today's pipeline, regenerate an entry or only its
 illustration for any date, moderate the suggestion queue, edit the blocklist and
 trend-source list (KV), inspect the last 50 cron log rows and the seed supply.
 
+### Manual trigger (don't wait for the 00:00 UTC cron)
+
+The daily pipeline is idempotent (upserts by date), so re-running it is always
+safe. Two ways to trigger it on demand:
+
+**1. From the browser** — visit `https://iuma.dev/admin`, authenticate through
+your existing Access policy, click "re-run today's pipeline" (or fill in a date
+under "regenerate" to redo/backfill a specific day, optionally "illustration
+only").
+
+**2. From GitHub Actions** (`.github/workflows/trigger-pipeline.yml`,
+`workflow_dispatch` — trigger it from the repo's Actions tab, with optional
+`date` / `imageOnly` inputs). It calls the same Access-protected endpoints via
+`curl`, authenticating as a **Cloudflare Access Service Token** (a machine
+identity for your existing Zero Trust policy — no separate secret channel to
+manage):
+
+1. Zero Trust dashboard → Access → **Service Auth** → **Service Tokens** →
+   Create Service Token (e.g. `github-actions-trigger`). Copy the **Client ID**
+   and **Client Secret** — the secret is shown once.
+2. Open the `iuma.dev/admin*` Access application (the one from the setup above)
+   → **Policies** → edit (or add) a policy that includes this rule: Include →
+   **Service Token** → the token you just created. This lets the token's
+   requests through without an interactive login; the Worker still verifies the
+   resulting JWT's signature and `aud` exactly as it does for your browser
+   session.
+3. In the GitHub repo → Settings → Secrets and variables → Actions, add:
+   - `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` — from step 1.
+   - Optionally a repo/environment **variable** `SLANGBOT_BASE_URL` if you want
+     to point at the `workers.dev` URL instead of `iuma.dev` (defaults to
+     `https://iuma.dev`).
+4. Run it: repo → Actions → "Trigger slangbot pipeline" → Run workflow.
+
+Both `/admin/run` and `/admin/regenerate` respond with JSON (instead of the
+admin HTML page) when the caller sends `Accept: application/json` — that's what
+the workflow and any other scripted caller should use; `curl` output then shows
+`{"ok":true,"message":"..."}` or `{"ok":false,"error":"..."}` directly.
+
 ## Cost model (Workers AI free tier: 10,000 neurons/day)
 
 **The core guarantee: user traffic never triggers an AI call.** Model calls
