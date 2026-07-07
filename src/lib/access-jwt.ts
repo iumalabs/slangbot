@@ -94,6 +94,15 @@ export async function verifyAccessJwt(
   }
 }
 
+/**
+ * Accepts either the bare team name ("myteam") or the full team domain
+ * ("myteam.cloudflareaccess.com").
+ */
+export function normalizeTeamDomain(teamDomain: string): string {
+  const t = teamDomain.trim();
+  return t.includes(".") ? t : `${t}.cloudflareaccess.com`;
+}
+
 /** Fetch the team's public certs, cached in KV for an hour. */
 export function kvCachedKeyFetcher(
   kv: KVNamespace,
@@ -103,7 +112,9 @@ export function kvCachedKeyFetcher(
     const cacheKey = "access:certs";
     const cached = await kv.get(cacheKey);
     if (cached) return (JSON.parse(cached) as { keys: AccessJwk[] }).keys;
-    const res = await fetch(`https://${teamDomain}/cdn-cgi/access/certs`);
+    const res = await fetch(
+      `https://${normalizeTeamDomain(teamDomain)}/cdn-cgi/access/certs`,
+    );
     if (!res.ok) throw new Error(`certs fetch failed: ${res.status}`);
     const body = await res.text();
     await kv.put(cacheKey, body, { expirationTtl: 3600 });

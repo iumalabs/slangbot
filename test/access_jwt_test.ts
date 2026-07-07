@@ -1,6 +1,10 @@
 /** Access JWT verification: valid, expired, wrong aud, spoofed signature. */
 import { assert, assertEquals } from "@std/assert";
-import { type AccessJwk, verifyAccessJwt } from "../src/lib/access-jwt.ts";
+import {
+  type AccessJwk,
+  normalizeTeamDomain,
+  verifyAccessJwt,
+} from "../src/lib/access-jwt.ts";
 import { base64UrlEncode } from "../src/lib/cookies.ts";
 
 const encoder = new TextEncoder();
@@ -93,6 +97,15 @@ Deno.test("spoofed token signed by an untrusted key is rejected", async () => {
     nowSeconds: NOW,
   });
   assertEquals(claims, null);
+});
+
+Deno.test("normalizeTeamDomain accepts bare name or full domain", () => {
+  assertEquals(normalizeTeamDomain("yugai"), "yugai.cloudflareaccess.com");
+  assertEquals(
+    normalizeTeamDomain("yugai.cloudflareaccess.com"),
+    "yugai.cloudflareaccess.com",
+  );
+  assertEquals(normalizeTeamDomain("  team  "), "team.cloudflareaccess.com");
 });
 
 Deno.test("garbage and missing tokens are rejected", async () => {

@@ -62,7 +62,6 @@ needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
    | --------------------- | ---------------------------------------------------------------------- |
    | `TURNSTILE_SECRET`    | Turnstile server-side key                                              |
    | `COOKIE_HMAC_SECRET`  | signs visitor cookies + shuffles game choices (any long random string) |
-   | `ADMIN_ACCESS_AUD`    | Cloudflare Access application AUD tag (see below)                      |
    | `TELEGRAM_BOT_TOKEN`  | optional, only if `TELEGRAM_ENABLED = "true"`                          |
    | `TELEGRAM_CHANNEL_ID` | optional, e.g. `@iuma_daily`                                           |
 
@@ -70,7 +69,9 @@ needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
 
 5. **Vars** in `wrangler.toml`: `TURNSTILE_SITE_KEY` (ships with the always-pass
    test key `1x00000000000000000000AA`; replace with your real site key),
-   `ACCESS_TEAM_DOMAIN` (e.g. `myteam.cloudflareaccess.com`),
+   `ACCESS_TEAM_DOMAIN` (bare team name or full `myteam.cloudflareaccess.com`),
+   `ADMIN_ACCESS_AUD` (the Access app's AUD tag — a public identifier present in
+   every Access JWT payload, so it lives in vars, not secrets),
    `TELEGRAM_ENABLED`.
 
 6. **Deploy**: `deno task deploy` → `https://iuma.<account>.workers.dev`.
@@ -105,9 +106,9 @@ spoofed `Cf-Access-Jwt-Assertion` header is rejected).
    applications. Otherwise create one: Allow → Include → Emails → your email
    (one-person policy).
 4. After saving, open the application → **Overview** → copy the **Application
-   Audience (AUD) Tag** → `wrangler secret put ADMIN_ACCESS_AUD`.
-5. Set `ACCESS_TEAM_DOMAIN` in `wrangler.toml` to your team domain
-   (`<team>.cloudflareaccess.com`).
+   Audience (AUD) Tag** into `ADMIN_ACCESS_AUD` in `wrangler.toml` and redeploy.
+5. Set `ACCESS_TEAM_DOMAIN` in `wrangler.toml` to your team name (bare `myteam`
+   works; the Worker expands it to `myteam.cloudflareaccess.com`).
 
 Admin features: re-run today's pipeline, regenerate an entry or only its
 illustration for any date, moderate the suggestion queue, edit the blocklist and

@@ -8,12 +8,13 @@ export interface Env {
   // Vars
   TURNSTILE_SITE_KEY: string;
   ACCESS_TEAM_DOMAIN: string;
+  /** Access app AUD tag — public identifier, lives in [vars], not secrets. */
+  ADMIN_ACCESS_AUD: string;
   TELEGRAM_ENABLED?: string;
 
   // Secrets
   TURNSTILE_SECRET: string;
   COOKIE_HMAC_SECRET: string;
-  ADMIN_ACCESS_AUD: string;
   TELEGRAM_BOT_TOKEN?: string;
   TELEGRAM_CHANNEL_ID?: string;
 }
