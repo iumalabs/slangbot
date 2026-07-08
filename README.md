@@ -17,15 +17,17 @@ specifiers; no `package.json`, no npm/node/npx).
 
 ## Commands
 
-| Task                                               | What it does                                            |
-| -------------------------------------------------- | ------------------------------------------------------- |
-| `deno task dev`                                    | client-bundle watcher + `wrangler dev --test-scheduled` |
-| `deno task build:client`                           | bundle `assets/client.js` (islands hydration)           |
-| `deno task build`                                  | full build for Workers Builds (deno install + client)   |
-| `deno task test`                                   | full test suite (`deno test -A`)                        |
-| `deno task lint`                                   | `deno lint` + `deno fmt --check`                        |
-| `deno task db:migrate:local` / `db:migrate:remote` | apply D1 migrations                                     |
-| `deno task seed`                                   | insert one demo term into the local D1                  |
+| Task                                               | What it does                                                                                                                |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `deno task dev`                                    | client-bundle watcher + `wrangler dev --test-scheduled`                                                                     |
+| `deno task build:client`                           | bundle `assets/client.js` (islands hydration)                                                                               |
+| `deno task build`                                  | full build for Workers Builds (deno install + client)                                                                       |
+| `deno task deploy:preview`                         | upload a Worker version (used by Workers Builds for non-production branches, and locally as an escape hatch)                |
+| `deno task deploy:production`                      | apply D1 migrations + deploy to iuma.dev (used by Workers Builds for the production branch, and locally as an escape hatch) |
+| `deno task test`                                   | full test suite (`deno test -A`)                                                                                            |
+| `deno task lint`                                   | `deno lint` + `deno fmt --check`                                                                                            |
+| `deno task db:migrate:local` / `db:migrate:remote` | apply D1 migrations                                                                                                         |
+| `deno task seed`                                   | insert one demo term into the local D1                                                                                      |
 
 `deno fmt`, `deno lint`, and `deno task check` are all clean.
 
@@ -35,8 +37,9 @@ points `core.hooksPath` at the committed `.githooks/` directory, so every
 tests) before the commit is created. Bypass in an emergency with
 `git commit --no-verify`.
 
-There is intentionally **no local deploy task** — all deploys go through the
-Cloudflare Workers ↔ GitHub integration (see "Deploys" below).
+The intended way to deploy is the Cloudflare Workers ↔ GitHub integration (see
+"Deploys" below), which calls `deploy:preview` / `deploy:production` for you on
+every push — running them locally is possible but not the default workflow.
 
 Note: `deno install` (run automatically by `dev`/`build`) materializes a
 gitignored `node_modules` from the `deno.json` import map — wrangler's bundler
@@ -107,25 +110,36 @@ Nothing deploys from a laptop:
 One-time setup in the dashboard (Workers & Pages → iuma → Settings → Build →
 **Connect** a Git repository), then fill the build configuration in:
 
-| Field                                | Value                                                                      |
-| ------------------------------------ | -------------------------------------------------------------------------- |
-| Git repository                       | `maksimyugai/iumadev`                                                      |
-| Production branch                    | `main`                                                                     |
-| Build command                        | `deno task build`                                                          |
-| Deploy command                       | `npx wrangler d1 migrations apply iuma-db --remote && npx wrangler deploy` |
-| Non-production branch deploy command | `npx wrangler versions upload`                                             |
-| Root directory                       | `/`                                                                        |
+| Field             | Value                                |
+| ----------------- | ------------------------------------ |
+| Git repository    | `maksimyugai/iumadev`                |
+| Production branch | `main`                               |
+| Build command     | `npx -y deno task build`             |
+| Deploy command    | `npx -y deno task deploy:production` |
+| Version command   | `npx -y deno task deploy:preview`    |
+| Root directory    | `/`                                  |
+
+("Deploy command" runs on pushes to the production branch; "Version command"
+runs on every other branch and uploads a preview version instead.)
+
+`deploy:preview` and `deploy:production` are ordinary tasks in `deno.json` —
+reused as-is by the dashboard, and available locally too (see the escape hatch
+below):
+
+```json
+"deploy:preview": "deno run -A npm:wrangler@latest versions upload",
+"deploy:production": "deno run -A npm:wrangler@latest d1 migrations apply iuma-db --remote && deno run -A npm:wrangler@latest deploy"
+```
 
 Notes:
 
-- `deno task build` runs `deno install` (materializes `node_modules` from the
-  `deno.json` import map so wrangler can resolve `react`/`hono`/`workers-og`)
-  and bundles `assets/client.js`. The Workers Builds image ships Deno; if the
-  preinstalled version is ever too old, prepend an install to the build command:
-  `curl -fsSL https://deno.land/install.sh | sh -s -- -y && export PATH="$HOME/.deno/bin:$PATH" && deno task build`.
-- The deploy commands use `npx wrangler` (not a Deno specifier) because they run
-  inside Cloudflare's build image, not on the Deno-only local toolchain — the
-  repo itself still contains no npm artifacts.
+- `npx -y deno ...` is how Workers Builds invokes Deno commands in its build
+  image (it ships both Node and Deno; `npx` here is just the shim Cloudflare
+  documents, not an npm dependency of this repo). `deno task build` itself runs
+  `deno install` (materializes `node_modules` from the `deno.json` import map so
+  wrangler can resolve `react`/`hono`/`workers-og`) and bundles
+  `assets/client.js`; the deploy/version commands run afterwards in the same
+  workspace, so they skip re-running it.
 - Previews share production bindings (same D1/KV/R2), so a preview shows real
   content — avoid destructive admin actions from a preview URL.
 - To hide preview URLs behind Cloudflare Access: Workers → iuma → Settings →
@@ -174,11 +188,11 @@ Workers" permissions):
 deno task build
 
 # upload a preview version (production untouched, prints the preview URL):
-deno run -A npm:wrangler@latest versions upload
+deno task deploy:preview
 
 # deploy straight to production (iuma.dev) — use sparingly; it bypasses the
 # PR checks and can be overwritten by the next Workers Builds deploy from main:
-deno run -A npm:wrangler@latest deploy
+deno task deploy:production
 ```
 
 Useful for emergencies (e.g. GitHub or Workers Builds is down) — day to day,

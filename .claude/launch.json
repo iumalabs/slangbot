@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "iuma",
+      "runtimeExecutable": "deno",
+      "runtimeArgs": [
+        "run",
+        "-A",
+        "npm:wrangler@latest",
+        "dev",
+        "--port",
+        "8799"
+      ],
+      "port": 8799,
+      "autoPort": false
+    }
+  ]
+}
