@@ -86,8 +86,8 @@ needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
    every Access JWT payload, so it lives in vars, not secrets),
    `TELEGRAM_ENABLED`.
 
-6. **Deploys — Cloudflare Workers ↔ GitHub integration only** (see the "Deploys"
-   section below). There is no local deploy path.
+6. **Deploys — Cloudflare Workers ↔ GitHub integration** (see the "Deploys"
+   section below); a local escape hatch exists too, but isn't the default.
 
 7. **Custom domain (manual, owner-only step)**: attach `iuma.dev` to the Worker
    in the dashboard (Workers → iuma → Settings → Domains & Routes). This repo
