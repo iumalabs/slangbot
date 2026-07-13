@@ -80,12 +80,38 @@ Respond with STRICT JSON only (no prose, no code fences) matching exactly:
   };
 }
 
-/** Flux prompt: hard-constrained to SFW, no text, no real people, no logos. */
-export function imagePrompt(term: string, definitionEn: string): string {
-  return `Editorial illustration for an online dictionary of internet slang, ` +
-    `visualizing the concept of "${term}" (${definitionEn.slice(0, 160)}). ` +
-    `Ironic, witty, slightly surreal editorial style. Dark midnight navy background ` +
-    `with violet glow and warm amber accents, glossy magazine feel. ` +
-    `Strictly: no text, no letters, no words, no captions, no real people, ` +
-    `no celebrity likeness, no brand logos, safe for work, no violence.`;
+/**
+ * Flux prompt: hard-constrained to SFW, no text, no people, no logos.
+ *
+ * Deliberately does NOT include the term itself: flux-1-schnell loves to
+ * render quoted words as typography, which is exactly the "no text" defect
+ * we validate against. Humans are banned outright too — hands and faces are
+ * the model's weakest anatomy at 6 steps, so the composition is steered
+ * toward metaphorical object scenes instead.
+ */
+export function imagePrompt(definitionEn: string, attempt = 0): string {
+  const retryPrefix = attempt > 0
+    ? "IMPORTANT: the previous attempt broke the rules below; follow them exactly this time. "
+    : "";
+  return `${retryPrefix}Editorial concept illustration for an online dictionary ` +
+    `of internet slang. Visualize this idea through objects, symbols and ` +
+    `atmosphere only: ${definitionEn.slice(0, 200)}. ` +
+    `Ironic, witty, slightly surreal metaphorical still-life composition. ` +
+    `Dark midnight navy background with violet glow and warm amber accents, ` +
+    `glossy magazine feel. ` +
+    `Hard rules: no humans, no faces, no hands, no body parts, no real people, ` +
+    `no celebrity likeness, absolutely no text, no letters, no words, no numbers, ` +
+    `no typography, no captions, no signage, no brand logos, no watermarks, ` +
+    `safe for work, no violence.`;
 }
+
+/**
+ * Vision-model check of the generated illustration. Kept to two binary
+ * questions LLaVA-7B answers reliably.
+ */
+export const IMAGE_VALIDATION_PROMPT =
+  `Look at the image carefully. Respond with STRICT JSON only, no prose: ` +
+  `{"has_text": true/false, "has_humans": true/false}. ` +
+  `"has_text" is true if the image contains any readable letters, words, ` +
+  `numbers or typography. "has_humans" is true if any human figure, face, ` +
+  `hand or other body part is visible.`;

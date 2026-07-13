@@ -255,12 +255,20 @@ exist only under `src/pipeline/` and `src/ai/` (grep-able convention) and are
 reached exclusively from the daily cron and explicit admin actions. Guessing,
 suggesting, browsing, RSS, and OG images are pure D1/KV/R2 work.
 
-| Daily pipeline step | Model                                      | Calls/day         | Est. neurons     |
-| ------------------- | ------------------------------------------ | ----------------- | ---------------- |
-| Pick & dedupe       | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` | 1                 | ~300             |
-| Generate entry      | same (one retry max on bad JSON)           | 1–2               | ~1,500–3,000     |
-| Illustration        | `@cf/black-forest-labs/flux-1-schnell`     | 1                 | ~50              |
-| **Total**           |                                            | **3–4 + 1 image** | **~2,000–3,500** |
+| Daily pipeline step | Model                                      | Calls/day                             | Est. neurons     |
+| ------------------- | ------------------------------------------ | ------------------------------------- | ---------------- |
+| Pick & dedupe       | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` | 1                                     | ~300             |
+| Generate entry      | same (one retry max on bad JSON)           | 1–2                                   | ~1,500–3,000     |
+| Illustration        | `@cf/black-forest-labs/flux-1-schnell`     | 1–2 (retry if the vision check fails) | ~50–100          |
+| Illustration check  | `@cf/llava-hf/llava-1.5-7b-hf`             | 1–2                                   | ~100             |
+| **Total**           |                                            | **4–7**                               | **~2,000–3,700** |
+
+The illustration is validated after generation: LLaVA answers whether the image
+contains readable text or human figures (the two classic flux-1-schnell defects
+— the prompt already bans both and never mentions the term itself, since the
+model loves rendering quoted words as typography). A flagged image triggers
+exactly one stricter regeneration; the second result ships regardless, and the
+check fails open — a broken validator never blocks the daily issue.
 
 Comfortably inside the free tier, and — because AI usage is a function of the
 cron only — **traffic volume has zero effect on AI spend.** All calls go through

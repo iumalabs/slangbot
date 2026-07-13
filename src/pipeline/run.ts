@@ -40,7 +40,7 @@ export async function runDailyPipeline(
   if (opts.imageOnly) {
     if (!existing) return `no entry for ${date}`;
     try {
-      const key = await illustrate(
+      const { key, note } = await illustrate(
         env.AI,
         env.IMAGES,
         existing.slug,
@@ -48,7 +48,7 @@ export async function runDailyPipeline(
         existing.definition_en,
       );
       await setImageKey(db, existing.slug, key);
-      await logCron(db, "illustrate", "ok", `regenerated ${key}`);
+      await logCron(db, "illustrate", "ok", `regenerated ${key} (${note})`);
       return `illustration regenerated for ${existing.slug}`;
     } catch (e) {
       await logCron(db, "illustrate", "error", String(e));
@@ -138,9 +138,10 @@ export async function runDailyPipeline(
     if (!publishedSlugSet.has(slugify(rel))) await addSeedTerm(db, rel, 10);
   }
 
-  // 4. Illustrate (1 image call). Failure is non-fatal — entry ships anyway.
+  // 4. Illustrate (1-2 image calls + vision check). Failure is non-fatal —
+  // the entry ships anyway.
   try {
-    const key = await illustrate(
+    const { key, note } = await illustrate(
       env.AI,
       env.IMAGES,
       slug,
@@ -148,7 +149,7 @@ export async function runDailyPipeline(
       entry.definition_en,
     );
     await setImageKey(db, slug, key);
-    await logCron(db, "illustrate", "ok", key);
+    await logCron(db, "illustrate", "ok", `${key} (${note})`);
   } catch (e) {
     await logCron(db, "illustrate", "error", `publishing without image: ${e}`);
   }
