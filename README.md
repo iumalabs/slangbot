@@ -75,7 +75,7 @@ needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
    | `TURNSTILE_SECRET`    | Turnstile server-side key                                              |
    | `COOKIE_HMAC_SECRET`  | signs visitor cookies + shuffles game choices (any long random string) |
    | `TELEGRAM_BOT_TOKEN`  | optional, only if `TELEGRAM_ENABLED = "true"`                          |
-   | `TELEGRAM_CHANNEL_ID` | optional, e.g. `@iuma_daily`                                           |
+   | `TELEGRAM_CHANNEL_ID` | optional, e.g. `@slangbotapp`                                          |
 
    For local dev create `.dev.vars` (gitignored) with the same names.
 
@@ -197,6 +197,27 @@ deno task deploy:production
 
 Useful for emergencies (e.g. GitHub or Workers Builds is down) — day to day,
 push a branch and let the integration do it.
+
+### Telegram channel setup (t.me/slangbotapp)
+
+When `TELEGRAM_ENABLED = "true"`, the pipeline posts each new word to the
+channel as a playable mini-game: the illustration, the three definitions labeled
+A/B/C, and a native **quiz poll** — subscribers vote right in Telegram and
+instantly see whether they guessed the real one (Telegram caps poll options at
+100 chars, so the full definitions live in the message and the poll options are
+just the letters). The shuffle order matches the site (same HMAC-derived
+permutation). Re-runs of an already-published date do **not** repost, so
+regenerating an entry never spams the channel.
+
+One-time setup:
+
+1. Create a bot via [@BotFather](https://t.me/BotFather) (`/newbot`) and copy
+   the token → `wrangler secret put TELEGRAM_BOT_TOKEN`.
+2. Add the bot to the channel as an **administrator** with the "Post messages"
+   right (channel → Administrators → Add admin).
+3. `printf '@slangbotapp' | wrangler secret put TELEGRAM_CHANNEL_ID`.
+4. `TELEGRAM_ENABLED` is already `"true"` in `wrangler.toml`; without the two
+   secrets the step is silently skipped, so nothing breaks before setup.
 
 ### Turnstile setup
 

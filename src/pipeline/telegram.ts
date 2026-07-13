@@ -1,0 +1,107 @@
+/**
+ * Step 5 (feature-flagged): post the daily word to the Telegram channel as a
+ * playable guess game — an illustration, the three definitions labeled
+ * A/B/C, and a native quiz poll where subscribers vote and instantly see
+ * whether they were right.
+ *
+ * Telegram limits poll option text to 100 chars, far shorter than a real
+ * definition — hence the standard split: a message carries the full A/B/C
+ * texts, the quiz poll options are just the letters.
+ *
+ * Plain Bot API fetches; no AI involved.
+ */
+
+const CHOICE_LABELS = ["A", "B", "C"] as const;
+
+export interface TelegramPost {
+  method: string;
+  payload: Record<string, unknown>;
+}
+
+export interface DailyPostInput {
+  channelId: string;
+  siteName: string;
+  dayNumber: number;
+  term: string;
+  ipa: string;
+  pos: string;
+  /** Shuffled definitions in display order (same order as the site). */
+  choices: readonly [string, string, string];
+  /** Display index of the real definition. */
+  correctIndex: number;
+  permalink: string;
+  imageUrl: string | null;
+}
+
+/** Pure builder — exported for tests. */
+export function buildTelegramPosts(input: DailyPostInput): TelegramPost[] {
+  const posts: TelegramPost[] = [];
+  const header =
+    `📖 ${input.siteName} — day ${input.dayNumber}\n\n${input.term}\n` +
+    `${input.ipa} · ${input.pos}`;
+
+  if (input.imageUrl) {
+    posts.push({
+      method: "sendPhoto",
+      payload: {
+        chat_id: input.channelId,
+        photo: input.imageUrl,
+        caption: header,
+      },
+    });
+  }
+
+  const options = input.choices
+    .map((text, i) => `${CHOICE_LABELS[i]}) ${text}`)
+    .join("\n\n");
+  posts.push({
+    method: "sendMessage",
+    payload: {
+      chat_id: input.channelId,
+      text: `${input.imageUrl ? input.term : header}\n\n` +
+        `one of these is the real definition:\n\n${options}\n\n` +
+        `vote below 👇 then read the full entry:\n${input.permalink}`,
+      link_preview_options: { is_disabled: true },
+    },
+  });
+
+  posts.push({
+    method: "sendPoll",
+    payload: {
+      chat_id: input.channelId,
+      question: `${input.term} — which definition is real?`.slice(0, 300),
+      options: [...CHOICE_LABELS],
+      type: "quiz",
+      correct_option_id: input.correctIndex,
+      is_anonymous: true,
+      explanation: `full entry → ${input.permalink}`.slice(0, 200),
+    },
+  });
+
+  return posts;
+}
+
+/** Sends the posts in order; returns a per-call status summary. */
+export async function sendTelegramPosts(
+  botToken: string,
+  posts: TelegramPost[],
+): Promise<string> {
+  const results: string[] = [];
+  for (const post of posts) {
+    const res = await fetch(
+      `https://api.telegram.org/bot${botToken}/${post.method}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(post.payload),
+      },
+    );
+    let detail = String(res.status);
+    if (!res.ok) {
+      const body = (await res.text()).slice(0, 120);
+      detail += ` ${body}`;
+    }
+    results.push(`${post.method}: ${detail}`);
+  }
+  return results.join("; ");
+}

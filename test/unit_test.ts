@@ -18,6 +18,7 @@ import { extractJson } from "../src/ai/gateway.ts";
 import { parsePickJson } from "../src/pipeline/pick.ts";
 import { parseEntryJson } from "../src/pipeline/generate.ts";
 import { parseIllustrationVerdict } from "../src/pipeline/illustrate.ts";
+import { buildTelegramPosts } from "../src/pipeline/telegram.ts";
 import { imagePrompt } from "../src/ai/prompts.ts";
 import {
   extractTermsFromTitles,
@@ -219,6 +220,53 @@ Deno.test("image prompt never contains the term and bans text/humans", () => {
   assert(prompt.includes("no hands"));
   const retry = imagePrompt("def", 1);
   assert(retry.startsWith("IMPORTANT"));
+});
+
+// --- telegram posts ---
+
+const TG_INPUT = {
+  channelId: "@slangbotapp",
+  siteName: "slangbot",
+  dayNumber: 7,
+  term: "bussin",
+  ipa: "/ˈbʌsɪn/",
+  pos: "adj., internet",
+  choices: ["REAL definition", "FAKE one", "FAKE two"] as const,
+  correctIndex: 0,
+  permalink: "https://iuma.dev/term/bussin",
+  imageUrl: "https://iuma.dev/img/terms/bussin.png",
+};
+
+Deno.test("telegram posts: photo + labeled options + quiz poll", () => {
+  const posts = buildTelegramPosts(TG_INPUT);
+  assertEquals(posts.map((p) => p.method), [
+    "sendPhoto",
+    "sendMessage",
+    "sendPoll",
+  ]);
+
+  const message = posts[1].payload.text as string;
+  assert(message.includes("A) REAL definition"));
+  assert(message.includes("B) FAKE one"));
+  assert(message.includes("C) FAKE two"));
+  assert(message.includes(TG_INPUT.permalink));
+  // The message itself must not reveal which option is real.
+  assert(!message.toLowerCase().includes("correct"));
+
+  const poll = posts[2].payload;
+  assertEquals(poll.type, "quiz");
+  assertEquals(poll.options, ["A", "B", "C"]);
+  assertEquals(poll.correct_option_id, 0);
+  assertEquals(poll.is_anonymous, true);
+  assert((poll.question as string).length <= 300);
+  assert((poll.explanation as string).length <= 200);
+});
+
+Deno.test("telegram posts: no photo message when the image is missing", () => {
+  const posts = buildTelegramPosts({ ...TG_INPUT, imageUrl: null });
+  assertEquals(posts.map((p) => p.method), ["sendMessage", "sendPoll"]);
+  // Without the photo, the header (term/ipa/pos) moves into the message.
+  assert((posts[0].payload.text as string).includes("/ˈbʌsɪn/"));
 });
 
 // --- harvest parsers ---

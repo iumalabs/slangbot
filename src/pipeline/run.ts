@@ -4,6 +4,7 @@ import type { Env } from "../env.ts";
 import { CANONICAL_ORIGIN, SITE_NAME } from "../config.ts";
 import {
   addSeedTerm,
+  getDayNumber,
   getPublishedSlugsAndTerms,
   getTermByDate,
   logCron,
@@ -13,12 +14,14 @@ import {
   upsertTermByDate,
 } from "../lib/d1.ts";
 import { getBlocklist } from "../lib/kv.ts";
+import { choiceOrder } from "../lib/game.ts";
 import { slugify, uniqueSlug } from "../lib/slug.ts";
 import { todayUTC } from "../lib/i18n.ts";
 import { harvestCandidates } from "./harvest.ts";
 import { pickTerm } from "./pick.ts";
 import { generateEntry } from "./generate.ts";
 import { illustrate } from "./illustrate.ts";
+import { buildTelegramPosts, sendTelegramPosts } from "./telegram.ts";
 
 export interface RunOptions {
   date?: string;
@@ -140,6 +143,7 @@ export async function runDailyPipeline(
 
   // 4. Illustrate (1-2 image calls + vision check). Failure is non-fatal —
   // the entry ships anyway.
+  let imageKey: string | null = existing?.image_key ?? null;
   try {
     const { key, note } = await illustrate(
       env.AI,
@@ -149,35 +153,43 @@ export async function runDailyPipeline(
       entry.definition_en,
     );
     await setImageKey(db, slug, key);
+    imageKey = key;
     await logCron(db, "illustrate", "ok", `${key} (${note})`);
   } catch (e) {
     await logCron(db, "illustrate", "error", `publishing without image: ${e}`);
   }
 
-  // 5. Optional Telegram autopost (feature flag, plain Bot API fetch, no AI).
+  // 5. Optional Telegram autopost (feature flag, plain Bot API fetch, no AI):
+  // illustration + the A/B/C definitions + a native quiz poll. Skipped on
+  // forced re-runs for an already-published date so the channel is never
+  // spammed twice with the same day.
   if (
+    !existing &&
     env.TELEGRAM_ENABLED === "true" && env.TELEGRAM_BOT_TOKEN &&
     env.TELEGRAM_CHANNEL_ID
   ) {
     try {
-      const text = `${SITE_NAME} — word of the day: ${entry.term}\n` +
-        `${
-          entry.definition_en.slice(0, 140)
-        }\n${CANONICAL_ORIGIN}/term/${slug}`;
-      const res = await fetch(
-        `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: env.TELEGRAM_CHANNEL_ID, text }),
-        },
-      );
-      await logCron(
-        db,
-        "telegram",
-        res.ok ? "ok" : "error",
-        `status ${res.status}`,
-      );
+      // Same shuffle as the site: display order derives from HMAC(slug).
+      const order = await choiceOrder(slug, env.COOKIE_HMAC_SECRET);
+      const defs = [
+        entry.definition_en,
+        entry.fake_definitions_en[0],
+        entry.fake_definitions_en[1],
+      ];
+      const posts = buildTelegramPosts({
+        channelId: env.TELEGRAM_CHANNEL_ID,
+        siteName: SITE_NAME,
+        dayNumber: await getDayNumber(db, date),
+        term: entry.term,
+        ipa: entry.ipa,
+        pos: entry.pos,
+        choices: [defs[order[0]], defs[order[1]], defs[order[2]]],
+        correctIndex: order.indexOf(0),
+        permalink: `${CANONICAL_ORIGIN}/term/${slug}`,
+        imageUrl: imageKey ? `${CANONICAL_ORIGIN}/img/${imageKey}` : null,
+      });
+      const summary = await sendTelegramPosts(env.TELEGRAM_BOT_TOKEN, posts);
+      await logCron(db, "telegram", "ok", summary);
     } catch (e) {
       await logCron(db, "telegram", "error", String(e));
     }
