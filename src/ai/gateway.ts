@@ -1,6 +1,6 @@
 /** Workers AI helpers. Pipeline-only — never import from route handlers. */
 
-import { AI_GATEWAY, IMAGE_MODEL, TEXT_MODEL } from "./models.ts";
+import { AI_GATEWAY, IMAGE_MODEL, TEXT_MODEL, VISION_MODEL } from "./models.ts";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -43,6 +43,8 @@ export function extractTextResponse(res: unknown): string {
   if (res && typeof res === "object") {
     const r = res as Record<string, unknown>;
     if (typeof r.response === "string") return r.response;
+    // LLaVA-style vision responses.
+    if (typeof r.description === "string") return r.description;
     const result = r.result as Record<string, unknown> | undefined;
     if (result && typeof result.response === "string") return result.response;
     const choices = r.choices as
@@ -92,6 +94,21 @@ export async function runImage(ai: Ai, prompt: string): Promise<Uint8Array> {
     return new Uint8Array(buf);
   }
   throw new Error("unexpected image model response shape");
+}
+
+/** Ask the vision model a question about an image; returns its raw answer. */
+export async function runVision(
+  ai: Ai,
+  imageBytes: Uint8Array,
+  prompt: string,
+  maxTokens = 150,
+): Promise<string> {
+  const res = await runWithGatewayFallback(ai, VISION_MODEL, {
+    image: Array.from(imageBytes),
+    prompt,
+    max_tokens: maxTokens,
+  });
+  return extractTextResponse(res);
 }
 
 /**

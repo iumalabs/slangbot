@@ -17,6 +17,8 @@ import { signValue, verifyValue } from "../src/lib/cookies.ts";
 import { extractJson } from "../src/ai/gateway.ts";
 import { parsePickJson } from "../src/pipeline/pick.ts";
 import { parseEntryJson } from "../src/pipeline/generate.ts";
+import { parseIllustrationVerdict } from "../src/pipeline/illustrate.ts";
+import { imagePrompt } from "../src/ai/prompts.ts";
 import {
   extractTermsFromTitles,
   parseFeedTitles,
@@ -178,6 +180,45 @@ Deno.test("parseEntryJson rejects missing fields and short fake lists", () => {
   const oneFake = JSON.parse(GOOD_ENTRY);
   oneFake.fake_definitions_en = ["only one"];
   assertThrows(() => parseEntryJson(JSON.stringify(oneFake)));
+});
+
+// --- illustration validation ---
+
+Deno.test("parseIllustrationVerdict flags text and humans", () => {
+  assertEquals(
+    parseIllustrationVerdict('{"has_text": true, "has_humans": false}'),
+    { ok: false, reason: "vision flagged: text" },
+  );
+  assertEquals(
+    parseIllustrationVerdict('{"has_text": false, "has_humans": true}').ok,
+    false,
+  );
+  assertEquals(
+    parseIllustrationVerdict('{"has_text": false, "has_humans": false}').ok,
+    true,
+  );
+  // LLaVA often wraps JSON in prose — extractJson handles that.
+  assertEquals(
+    parseIllustrationVerdict(
+      'Sure! {"has_text": true, "has_humans": true} hope that helps',
+    ).ok,
+    false,
+  );
+});
+
+Deno.test("parseIllustrationVerdict fails open on garbage", () => {
+  assertEquals(parseIllustrationVerdict("I see a cat").ok, true);
+  assertEquals(parseIllustrationVerdict("").ok, true);
+});
+
+Deno.test("image prompt never contains the term and bans text/humans", () => {
+  const prompt = imagePrompt("something exceptionally good or high quality");
+  assert(!prompt.includes("bussin"));
+  assert(prompt.includes("no text"));
+  assert(prompt.includes("no humans"));
+  assert(prompt.includes("no hands"));
+  const retry = imagePrompt("def", 1);
+  assert(retry.startsWith("IMPORTANT"));
 });
 
 // --- harvest parsers ---
