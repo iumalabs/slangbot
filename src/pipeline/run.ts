@@ -1,7 +1,6 @@
 /** Daily pipeline orchestration. Idempotent per date; every step logged. */
 
 import type { Env } from "../env.ts";
-import { CANONICAL_ORIGIN, SITE_NAME } from "../config.ts";
 import {
   addSeedTerm,
   getDayNumber,
@@ -14,14 +13,13 @@ import {
   upsertTermByDate,
 } from "../lib/d1.ts";
 import { getBlocklist } from "../lib/kv.ts";
-import { choiceOrder } from "../lib/game.ts";
 import { slugify, uniqueSlug } from "../lib/slug.ts";
 import { todayUTC } from "../lib/i18n.ts";
 import { harvestCandidates } from "./harvest.ts";
 import { pickTerm } from "./pick.ts";
 import { generateEntry } from "./generate.ts";
 import { illustrate } from "./illustrate.ts";
-import { buildTelegramPosts, sendTelegramPosts } from "./telegram.ts";
+import { postTermToTelegram } from "./telegram.ts";
 
 export interface RunOptions {
   date?: string;
@@ -143,7 +141,6 @@ export async function runDailyPipeline(
 
   // 4. Illustrate (1-2 image calls + vision check). Failure is non-fatal —
   // the entry ships anyway.
-  let imageKey: string | null = existing?.image_key ?? null;
   try {
     const { key, note } = await illustrate(
       env.AI,
@@ -153,7 +150,6 @@ export async function runDailyPipeline(
       entry.definition_en,
     );
     await setImageKey(db, slug, key);
-    imageKey = key;
     await logCron(db, "illustrate", "ok", `${key} (${note})`);
   } catch (e) {
     await logCron(db, "illustrate", "error", `publishing without image: ${e}`);
@@ -169,26 +165,13 @@ export async function runDailyPipeline(
     env.TELEGRAM_CHANNEL_ID
   ) {
     try {
-      // Same shuffle as the site: display order derives from HMAC(slug).
-      const order = await choiceOrder(slug, env.COOKIE_HMAC_SECRET);
-      const defs = [
-        entry.definition_en,
-        entry.fake_definitions_en[0],
-        entry.fake_definitions_en[1],
-      ];
-      const posts = buildTelegramPosts({
-        channelId: env.TELEGRAM_CHANNEL_ID,
-        siteName: SITE_NAME,
-        dayNumber: await getDayNumber(db, date),
-        term: entry.term,
-        ipa: entry.ipa,
-        pos: entry.pos,
-        choices: [defs[order[0]], defs[order[1]], defs[order[2]]],
-        correctIndex: order.indexOf(0),
-        permalink: `${CANONICAL_ORIGIN}/term/${slug}`,
-        imageUrl: imageKey ? `${CANONICAL_ORIGIN}/img/${imageKey}` : null,
-      });
-      const summary = await sendTelegramPosts(env.TELEGRAM_BOT_TOKEN, posts);
+      const row = await getTermByDate(db, date);
+      if (!row) throw new Error(`term for ${date} vanished before posting`);
+      const summary = await postTermToTelegram(
+        env,
+        row,
+        await getDayNumber(db, date),
+      );
       await logCron(db, "telegram", "ok", summary);
     } catch (e) {
       await logCron(db, "telegram", "error", String(e));

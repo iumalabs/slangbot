@@ -9,10 +9,15 @@ import { kvCachedKeyFetcher, verifyAccessJwt } from "../lib/access-jwt.ts";
 import {
   countSuggestions,
   countUnusedSeedTerms,
+  getDayNumber,
+  getLatestTerm,
   listSuggestions,
+  logCron,
   recentCronLog,
   setSuggestionStatus,
 } from "../lib/d1.ts";
+import { todayUTC } from "../lib/i18n.ts";
+import { postTermToTelegram } from "../pipeline/telegram.ts";
 import {
   DEFAULT_BLOCKLIST,
   DEFAULT_SOURCES,
@@ -90,6 +95,9 @@ admin.get("/admin", async (c) => {
             illustration only
           </label>
           <button type="submit">regenerate</button>
+        </form>
+        <form method="post" action="/admin/telegram" className="admin-inline">
+          <button type="submit">post today's word to Telegram</button>
         </form>
       </section>
 
@@ -229,6 +237,39 @@ admin.post("/admin/regenerate", async (c) => {
     if (wantsJson(c)) return c.json({ ok: false, error: String(e) }, 500);
     return await renderPage(
       <AdminShell title="regenerate">
+        <p>failed: {String(e)}</p>
+      </AdminShell>,
+      { status: 500 },
+    );
+  }
+});
+
+// Manual Telegram post for the latest published word — the pipeline itself
+// only posts on the first publish of a date, so this is the way to (re)post
+// today on demand.
+admin.post("/admin/telegram", async (c) => {
+  const row = await getLatestTerm(c.env.DB, todayUTC());
+  if (!row) {
+    if (wantsJson(c)) return c.json({ ok: false, error: "no term yet" }, 404);
+    return c.text("no published term yet", 404);
+  }
+  try {
+    const dayNumber = await getDayNumber(c.env.DB, row.date);
+    const summary = await postTermToTelegram(c.env, row, dayNumber);
+    await logCron(c.env.DB, "telegram", "ok", `manual: ${summary}`);
+    if (wantsJson(c)) return c.json({ ok: true, message: summary });
+    return await renderPage(
+      <AdminShell title="telegram post">
+        <p>
+          posted "{row.term}" to Telegram: {summary}
+        </p>
+      </AdminShell>,
+    );
+  } catch (e) {
+    await logCron(c.env.DB, "telegram", "error", `manual: ${e}`);
+    if (wantsJson(c)) return c.json({ ok: false, error: String(e) }, 500);
+    return await renderPage(
+      <AdminShell title="telegram post">
         <p>failed: {String(e)}</p>
       </AdminShell>,
       { status: 500 },
