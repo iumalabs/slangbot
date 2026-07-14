@@ -34,6 +34,21 @@ async function publishedSlugSet(db: D1Database): Promise<Set<string>> {
   return new Set((await getPublishedSlugsAndTerms(db)).map((p) => p.slug));
 }
 
+interface PageCtx {
+  env: Env;
+  req: { header(name: string): string | undefined };
+}
+
+/**
+ * Whether the visitor carries a Cloudflare Access session cookie — i.e. they
+ * have already authenticated for this zone. Only used to decide if the
+ * "admin" pill is worth rendering; /admin itself stays fully protected by
+ * Access + in-Worker JWT verification regardless.
+ */
+function hasAccessSession(c: PageCtx): boolean {
+  return (c.req.header("cookie") ?? "").includes("CF_Authorization=");
+}
+
 function notFoundPage(locale: Locale, path: string) {
   const ui = t(locale);
   return (
@@ -53,10 +68,7 @@ function notFoundPage(locale: Locale, path: string) {
   );
 }
 
-async function homePage(
-  c: { env: Env; req: { path: string } },
-  locale: Locale,
-) {
+async function homePage(c: PageCtx, locale: Locale) {
   const today = todayUTC();
   const row = await getLatestTerm(c.env.DB, today);
   const ui = t(locale);
@@ -69,6 +81,7 @@ async function homePage(
         path={path}
         title={SITE_NAME}
         description={TAGLINE}
+        showAdmin={hasAccessSession(c)}
       >
         <section className="card slim">
           <p>{ui.noEntryYet}</p>
@@ -105,6 +118,7 @@ async function homePage(
       tickerDate={row.date}
       tickerSources={row.trend_source || "seed"}
       dayNumber={dayNumber}
+      showAdmin={hasAccessSession(c)}
     >
       <article className="card">
         <div className="card-sheen" aria-hidden="true"></div>
@@ -152,7 +166,7 @@ async function homePage(
   );
 }
 
-async function termPage(c: { env: Env }, locale: Locale, slug: string) {
+async function termPage(c: PageCtx, locale: Locale, slug: string) {
   const row = await getTermBySlug(c.env.DB, slug);
   const path = localePath(locale, `/term/${slug}`);
   if (!row) {
@@ -174,6 +188,8 @@ async function termPage(c: { env: Env }, locale: Locale, slug: string) {
       tickerDate={row.date}
       tickerSources={row.trend_source || "seed"}
       dayNumber={dayNumber}
+      showAdmin={hasAccessSession(c)}
+      backTo={{ href: localePath(locale, "/"), label: ui.backHome }}
     >
       <EntryCard entry={entry} locale={locale}>
         <p className="term-meta">
@@ -197,7 +213,7 @@ async function termPage(c: { env: Env }, locale: Locale, slug: string) {
 }
 
 async function archivePage(
-  c: { env: Env; req: { query(name: string): string | undefined } },
+  c: PageCtx & { req: { query(name: string): string | undefined } },
   locale: Locale,
 ) {
   const search = (c.req.query("q") ?? "").slice(0, 60);
@@ -210,6 +226,8 @@ async function archivePage(
       path={path}
       title={`${ui.archiveTitle} · ${SITE_NAME}`}
       description={TAGLINE}
+      showAdmin={hasAccessSession(c)}
+      backTo={{ href: localePath(locale, "/"), label: ui.backHome }}
     >
       <ArchiveGrid terms={terms} locale={locale} search={search} />
     </Layout>,
