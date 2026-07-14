@@ -15,6 +15,8 @@ import type { Env } from "../env.ts";
 import type { TermRow } from "../lib/d1.ts";
 import { parseFakeDefs } from "../lib/d1.ts";
 import { choiceOrder } from "../lib/game.ts";
+import { type Locale, localePath } from "../lib/i18n.ts";
+import { t } from "../content/i18n.ts";
 import { CANONICAL_ORIGIN, SITE_NAME } from "../config.ts";
 
 const CHOICE_LABELS = ["A", "B", "C"] as const;
@@ -28,6 +30,8 @@ export interface DailyPostInput {
   channelId: string;
   siteName: string;
   dayNumber: number;
+  /** Language of the post scaffolding and (by the caller) the definitions. */
+  locale: Locale;
   term: string;
   ipa: string;
   pos: string;
@@ -41,9 +45,10 @@ export interface DailyPostInput {
 
 /** Pure builder — exported for tests. */
 export function buildTelegramPosts(input: DailyPostInput): TelegramPost[] {
+  const ui = t(input.locale);
   const posts: TelegramPost[] = [];
   const header =
-    `📖 ${input.siteName} — day ${input.dayNumber}\n\n${input.term}\n` +
+    `📖 ${input.siteName} — ${ui.tickerDay} ${input.dayNumber}\n\n${input.term}\n` +
     `${input.ipa} · ${input.pos}`;
 
   if (input.imageUrl) {
@@ -65,8 +70,8 @@ export function buildTelegramPosts(input: DailyPostInput): TelegramPost[] {
     payload: {
       chat_id: input.channelId,
       text: `${input.imageUrl ? input.term : header}\n\n` +
-        `one of these is the real definition:\n\n${options}\n\n` +
-        `vote below 👇 then read the full entry:\n${input.permalink}`,
+        `${ui.tgIntro}\n\n${options}\n\n` +
+        `${ui.tgVote}\n${input.permalink}`,
       link_preview_options: { is_disabled: true },
     },
   });
@@ -75,12 +80,12 @@ export function buildTelegramPosts(input: DailyPostInput): TelegramPost[] {
     method: "sendPoll",
     payload: {
       chat_id: input.channelId,
-      question: `${input.term} — which definition is real?`.slice(0, 300),
+      question: ui.tgWhichReal(input.term).slice(0, 300),
       options: [...CHOICE_LABELS],
       type: "quiz",
       correct_option_id: input.correctIndex,
       is_anonymous: true,
-      explanation: `full entry → ${input.permalink}`.slice(0, 200),
+      explanation: `${ui.tgFullEntry} ${input.permalink}`.slice(0, 200),
     },
   });
 
@@ -102,20 +107,29 @@ export async function postTermToTelegram(
       "TELEGRAM_BOT_TOKEN / TELEGRAM_CHANNEL_ID secrets are not configured",
     );
   }
+  // Post language: TELEGRAM_LOCALE var ("en" | "ru", default en). The entry
+  // is bilingual in D1, so this is purely a presentation switch.
+  const locale: Locale = env.TELEGRAM_LOCALE === "ru" ? "ru" : "en";
   const fakes = parseFakeDefs(row);
-  const defs = [row.definition_en, fakes.en[0], fakes.en[1]];
+  const defs = locale === "ru"
+    ? [row.definition_ru, fakes.ru[0], fakes.ru[1]]
+    : [row.definition_en, fakes.en[0], fakes.en[1]];
+  const ipa = locale === "ru" && row.respelled_ru
+    ? `${row.ipa} · ${row.respelled_ru}`
+    : row.ipa;
   // Same shuffle as the site: display order derives from HMAC(slug).
   const order = await choiceOrder(row.slug, env.COOKIE_HMAC_SECRET);
   const posts = buildTelegramPosts({
     channelId: env.TELEGRAM_CHANNEL_ID,
     siteName: SITE_NAME,
     dayNumber,
+    locale,
     term: row.term,
-    ipa: row.ipa,
+    ipa,
     pos: row.pos,
     choices: [defs[order[0]], defs[order[1]], defs[order[2]]],
     correctIndex: order.indexOf(0),
-    permalink: `${CANONICAL_ORIGIN}/term/${row.slug}`,
+    permalink: `${CANONICAL_ORIGIN}${localePath(locale, `/term/${row.slug}`)}`,
     imageUrl: row.image_key ? `${CANONICAL_ORIGIN}/img/${row.image_key}` : null,
   });
   return await sendTelegramPosts(env.TELEGRAM_BOT_TOKEN, posts);

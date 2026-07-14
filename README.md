@@ -221,6 +221,11 @@ One-time setup:
    **channel** username, not the bot's.
 4. `TELEGRAM_ENABLED` is already `"true"` in `wrangler.toml`; without the two
    secrets the step is silently skipped, so nothing breaks before setup.
+5. **Post language**: the `TELEGRAM_LOCALE` var in `wrangler.toml` switches the
+   channel post between `"en"` and `"ru"` (currently `"ru"`). Entries are
+   bilingual in D1, so this only changes which definitions and scaffolding are
+   shown; the permalink points at the matching site locale, and the RU header
+   also carries the Cyrillic respelling.
 
 ### Suggestion moderation from Telegram
 
