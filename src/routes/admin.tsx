@@ -54,6 +54,9 @@ function AdminShell(props: { title: string; children: React.ReactNode }) {
       </head>
       <body className="admin">
         <main className="main admin-main">
+          <p className="back-top">
+            <a href="/">← back to the site</a>
+          </p>
           <h1 className="page-title">{SITE_NAME} admin</h1>
           {props.children}
           <p>

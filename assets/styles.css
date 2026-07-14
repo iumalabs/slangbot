@@ -116,6 +116,45 @@ a:hover {
   pointer-events: none;
 }
 
+/* "admin" pill next to the flag — rendered only for visitors who already
+   carry a Cloudflare Access session cookie. */
+.admin-pill {
+  position: fixed;
+  top: 80px;
+  left: 118px;
+  z-index: 5;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 5px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 100, 220, 0.55);
+  background: rgba(84, 48, 150, 0.28);
+  color: #c9b8f2;
+  text-decoration: none;
+}
+.admin-pill:hover {
+  color: var(--amber);
+  border-color: var(--card-edge);
+}
+
+/* Explicit back control at the top of inner pages. */
+.back-top {
+  margin: 0 0 16px;
+}
+.back-top a {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-decoration: none;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(143, 163, 200, 0.3);
+  color: var(--ink-dim);
+}
+.back-top a:hover {
+  color: var(--amber);
+  border-color: var(--card-edge);
+}
+
 @keyframes flag-wave {
   0%,
   100% {
@@ -142,6 +181,12 @@ a:hover {
     width: 44px;
     height: 28px;
     opacity: 0.4;
+  }
+
+  .admin-pill {
+    position: absolute;
+    top: 54px;
+    left: 66px;
   }
 }
 

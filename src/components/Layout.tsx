@@ -18,6 +18,10 @@ export interface LayoutProps {
   tickerDate?: string;
   tickerSources?: string;
   dayNumber?: number;
+  /** Show the "admin" pill (visitor carries a Cloudflare Access cookie). */
+  showAdmin?: boolean;
+  /** Explicit back control rendered above the page content. */
+  backTo?: { href: string; label: string };
   children: ReactNode;
 }
 
@@ -129,6 +133,7 @@ export function Layout(props: LayoutProps) {
           </nav>
         </header>
         <span className="ua-flag" aria-hidden="true"></span>
+        {props.showAdmin && <a className="admin-pill" href="/admin">admin</a>}
         <div className="masthead">
           <a className="wordmark" href={localePath(props.locale, "/")}>
             <img
@@ -145,6 +150,11 @@ export function Layout(props: LayoutProps) {
           </p>
         </div>
         <main id="main" className="main">
+          {props.backTo && (
+            <p className="back-top">
+              <a href={props.backTo.href}>← {props.backTo.label}</a>
+            </p>
+          )}
           {props.children}
         </main>
         <footer className="footer">
