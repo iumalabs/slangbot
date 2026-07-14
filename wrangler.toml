@@ -55,6 +55,10 @@ ADMIN_ACCESS_AUD = "124c4d91816b347e640227f38be8b261ee3dc22481c6c9601ed6f114a9a2
 # word is posted as illustration + A/B/C definitions + a native quiz poll.
 # Requires the TELEGRAM_BOT_TOKEN and TELEGRAM_CHANNEL_ID secrets.
 TELEGRAM_ENABLED = "true"
+# Language of the channel post: "en" or "ru". The entry data is bilingual,
+# so this only switches which definitions/scaffolding are shown and which
+# locale the permalink points to.
+TELEGRAM_LOCALE = "ru"
 
 # Secrets (set via `wrangler secret put <NAME>`, never committed):
 #   TURNSTILE_SECRET      — Turnstile secret key

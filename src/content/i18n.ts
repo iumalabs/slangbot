@@ -62,6 +62,11 @@ const en = {
     `ironic AI illustration for the term "${term}"`,
   noEntryYet:
     "the robot has not published anything yet. check back after midnight UTC.",
+  // Telegram channel post scaffolding
+  tgIntro: "one of these is the real definition:",
+  tgVote: "vote below 👇 then read the full entry:",
+  tgWhichReal: (term: string) => `${term} — which definition is real?`,
+  tgFullEntry: "full entry →",
 } as const;
 
 const ru: Record<keyof typeof en, unknown> = {
@@ -120,6 +125,10 @@ const ru: Record<keyof typeof en, unknown> = {
   illustrationAlt: (term: string) =>
     `ироничная ИИ-иллюстрация к термину «${term}»`,
   noEntryYet: "робот ещё ничего не опубликовал. загляните после полуночи UTC.",
+  tgIntro: "одно из этих определений настоящее:",
+  tgVote: "голосуйте ниже 👇 а потом читайте полный разбор:",
+  tgWhichReal: (term: string) => `${term} — какое определение настоящее?`,
+  tgFullEntry: "полный разбор →",
 };
 
 export type UIStrings = typeof en;

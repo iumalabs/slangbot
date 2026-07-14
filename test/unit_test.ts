@@ -233,6 +233,7 @@ const TG_INPUT = {
   channelId: "@daily_slangbot",
   siteName: "slangbot",
   dayNumber: 7,
+  locale: "en" as const,
   term: "bussin",
   ipa: "/ˈbʌsɪn/",
   pos: "adj., internet",
@@ -272,6 +273,18 @@ Deno.test("telegram posts: no photo message when the image is missing", () => {
   assertEquals(posts.map((p) => p.method), ["sendMessage", "sendPoll"]);
   // Without the photo, the header (term/ipa/pos) moves into the message.
   assert((posts[0].payload.text as string).includes("/ˈbʌsɪn/"));
+});
+
+Deno.test("telegram posts: ru locale localizes the scaffolding", () => {
+  const posts = buildTelegramPosts({ ...TG_INPUT, locale: "ru" });
+  const caption = posts[0].payload.caption as string;
+  assert(caption.includes("день 7"));
+  const message = posts[1].payload.text as string;
+  assert(message.includes("одно из этих определений настоящее"));
+  assert(message.includes("голосуйте ниже"));
+  const poll = posts[2].payload;
+  assertEquals(poll.question, "bussin — какое определение настоящее?");
+  assert((poll.explanation as string).startsWith("полный разбор →"));
 });
 
 // --- suggestion moderation callbacks ---
