@@ -3,6 +3,12 @@
 Read at the start of every session in this repo. Compact ruleset that must never
 be silently violated; README.md is the detailed reference.
 
+**Keep this file small.** Whenever something here (or about to land here) can
+live as a skill instead — a workflow, a how-to, anything invoked on demand
+rather than needed in every session — prefer moving it to a skill
+(`.claude/skills/`) and leave at most a one-line pointer. CLAUDE.md is loaded
+into every session's context; skills load only when used.
+
 ## Git workflow
 
 **Every branch is created from a freshly-fetched `origin/main` — never from
