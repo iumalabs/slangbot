@@ -11,8 +11,14 @@ import {
   incrementGuess,
   insertSuggestion,
   recentCronLog,
+  setSuggestionStatus,
 } from "../lib/d1.ts";
 import { localizeEntry } from "../lib/entry.ts";
+import {
+  notifySuggestion,
+  parseSuggestionCallback,
+  tgCall,
+} from "../pipeline/telegram.ts";
 import { correctIndex } from "../lib/game.ts";
 import { signValue, verifyValue } from "../lib/cookies.ts";
 import { verifyTurnstile } from "../lib/turnstile.ts";
@@ -147,10 +153,73 @@ api.post("/api/suggest", async (c) => {
   });
 
   // Stored as plain text; rendered only through React's default escaping.
-  await insertSuggestion(c.env.DB, term);
+  const suggestionId = await insertSuggestion(c.env.DB, term);
+
+  // Moderation notice with approve/reject buttons — best-effort, off the
+  // critical path of the visitor's request.
+  const notice = notifySuggestion(c.env, term, suggestionId);
+  try {
+    c.executionCtx.waitUntil(notice);
+  } catch {
+    // no execution context (tests) — the promise still settles on its own
+  }
 
   if (!contentType.includes("application/json")) {
     return c.redirect(c.req.header("referer") ?? "/", 303);
+  }
+  return c.json({ ok: true });
+});
+
+/**
+ * Telegram webhook: receives callback_query updates when the admin presses
+ * ✅/❌ under a suggestion notice. Authenticated by the secret token Telegram
+ * echoes in a header (set during webhook registration). No AI, no cookies.
+ */
+api.post("/api/telegram/webhook", async (c) => {
+  const secret = c.env.TELEGRAM_WEBHOOK_SECRET;
+  if (
+    !secret ||
+    c.req.header("X-Telegram-Bot-Api-Secret-Token") !== secret
+  ) {
+    return c.json({ error: "forbidden" }, 403);
+  }
+
+  let update: {
+    callback_query?: {
+      id: string;
+      data?: string;
+      message?: { chat: { id: number }; message_id: number; text?: string };
+    };
+  };
+  try {
+    update = await c.req.json();
+  } catch {
+    return c.json({ error: "bad request" }, 400);
+  }
+
+  const cb = update.callback_query;
+  const parsed = parseSuggestionCallback(cb?.data);
+  // Always 200 for unknown updates so Telegram does not retry them forever.
+  if (!cb || !parsed) return c.json({ ok: true });
+
+  const status = parsed.action === "approve" ? "approved" : "rejected";
+  await setSuggestionStatus(c.env.DB, parsed.id, status);
+
+  if (c.env.TELEGRAM_BOT_TOKEN) {
+    await tgCall(c.env.TELEGRAM_BOT_TOKEN, "answerCallbackQuery", {
+      callback_query_id: cb.id,
+      text: status,
+    });
+    if (cb.message) {
+      // Freeze the message: decision appended, buttons removed.
+      await tgCall(c.env.TELEGRAM_BOT_TOKEN, "editMessageText", {
+        chat_id: cb.message.chat.id,
+        message_id: cb.message.message_id,
+        text: `${cb.message.text ?? ""}\n\n${
+          status === "approved" ? "✅ approved" : "❌ rejected"
+        }`,
+      });
+    }
   }
   return c.json({ ok: true });
 });

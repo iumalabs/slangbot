@@ -18,7 +18,12 @@ import { extractJson } from "../src/ai/gateway.ts";
 import { parsePickJson } from "../src/pipeline/pick.ts";
 import { parseEntryJson } from "../src/pipeline/generate.ts";
 import { parseIllustrationVerdict } from "../src/pipeline/illustrate.ts";
-import { buildTelegramPosts } from "../src/pipeline/telegram.ts";
+import {
+  buildSuggestionNotice,
+  buildTelegramPosts,
+  parseSuggestionCallback,
+  suggestionCallbackData,
+} from "../src/pipeline/telegram.ts";
 import { imagePrompt } from "../src/ai/prompts.ts";
 import {
   extractTermsFromTitles,
@@ -267,6 +272,39 @@ Deno.test("telegram posts: no photo message when the image is missing", () => {
   assertEquals(posts.map((p) => p.method), ["sendMessage", "sendPoll"]);
   // Without the photo, the header (term/ipa/pos) moves into the message.
   assert((posts[0].payload.text as string).includes("/ˈbʌsɪn/"));
+});
+
+// --- suggestion moderation callbacks ---
+
+Deno.test("suggestion callback data round-trips", () => {
+  assertEquals(parseSuggestionCallback(suggestionCallbackData("approve", 42)), {
+    action: "approve",
+    id: 42,
+  });
+  assertEquals(parseSuggestionCallback(suggestionCallbackData("reject", 7)), {
+    action: "reject",
+    id: 7,
+  });
+});
+
+Deno.test("suggestion callback parser rejects foreign data", () => {
+  assertEquals(parseSuggestionCallback("sug:delete:1"), null);
+  assertEquals(parseSuggestionCallback("sug:approve:not-a-number"), null);
+  assertEquals(parseSuggestionCallback("something else"), null);
+  assertEquals(parseSuggestionCallback(undefined), null);
+});
+
+Deno.test("suggestion notice carries both buttons and the term", () => {
+  const post = buildSuggestionNotice("12345", "skibidi", 9);
+  assertEquals(post.method, "sendMessage");
+  assert((post.payload.text as string).includes("skibidi"));
+  const markup = post.payload.reply_markup as {
+    inline_keyboard: { text: string; callback_data: string }[][];
+  };
+  assertEquals(markup.inline_keyboard[0].map((b) => b.callback_data), [
+    "sug:approve:9",
+    "sug:reject:9",
+  ]);
 });
 
 // --- harvest parsers ---

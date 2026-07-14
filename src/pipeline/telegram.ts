@@ -121,6 +121,94 @@ export async function postTermToTelegram(
   return await sendTelegramPosts(env.TELEGRAM_BOT_TOKEN, posts);
 }
 
+/** Single Bot API call; returns "200" or "status + error body" for logging. */
+export async function tgCall(
+  botToken: string,
+  method: string,
+  payload: Record<string, unknown>,
+): Promise<string> {
+  const res = await fetch(
+    `https://api.telegram.org/bot${botToken}/${method}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (res.ok) return String(res.status);
+  return `${res.status} ${(await res.text()).slice(0, 120)}`;
+}
+
+// --- suggestion moderation (DM/notification chat with inline buttons) ---
+
+/** callback_data for the approve/reject buttons, e.g. "sug:approve:42". */
+export function suggestionCallbackData(
+  action: "approve" | "reject",
+  id: number,
+): string {
+  return `sug:${action}:${id}`;
+}
+
+/** Parse callback_data; null when it is not a suggestion callback. */
+export function parseSuggestionCallback(
+  data: unknown,
+): { action: "approve" | "reject"; id: number } | null {
+  if (typeof data !== "string") return null;
+  const m = data.match(/^sug:(approve|reject):(\d{1,10})$/);
+  if (!m) return null;
+  return { action: m[1] as "approve" | "reject", id: parseInt(m[2], 10) };
+}
+
+/** Moderation notice with inline ✅/❌ buttons. Pure builder — tested. */
+export function buildSuggestionNotice(
+  adminChatId: string,
+  term: string,
+  suggestionId: number,
+): TelegramPost {
+  return {
+    method: "sendMessage",
+    payload: {
+      chat_id: adminChatId,
+      text: `💡 new word suggestion:\n\n«${term}»`,
+      reply_markup: {
+        inline_keyboard: [[
+          {
+            text: "✅ approve",
+            callback_data: suggestionCallbackData("approve", suggestionId),
+          },
+          {
+            text: "❌ reject",
+            callback_data: suggestionCallbackData("reject", suggestionId),
+          },
+        ]],
+      },
+    },
+  };
+}
+
+/**
+ * Fire-and-forget notice about a fresh suggestion. Silently does nothing
+ * when the admin chat is not configured; never throws — a Telegram hiccup
+ * must not affect the visitor's request.
+ */
+export async function notifySuggestion(
+  env: Env,
+  term: string,
+  suggestionId: number,
+): Promise<void> {
+  if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_ADMIN_CHAT_ID) return;
+  try {
+    const post = buildSuggestionNotice(
+      env.TELEGRAM_ADMIN_CHAT_ID,
+      term,
+      suggestionId,
+    );
+    await tgCall(env.TELEGRAM_BOT_TOKEN, post.method, post.payload);
+  } catch {
+    // notification is best-effort
+  }
+}
+
 /** Sends the posts in order; returns a per-call status summary. */
 export async function sendTelegramPosts(
   botToken: string,

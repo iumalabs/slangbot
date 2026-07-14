@@ -83,8 +83,8 @@ export class FakeD1 {
       run(): Promise<
         { results: never[]; success: boolean; meta: Record<string, unknown> }
       > {
-        db.#runFor(q, bound);
-        return Promise.resolve({ results: [], success: true, meta: {} });
+        const meta = db.#runFor(q, bound) ?? {};
+        return Promise.resolve({ results: [], success: true, meta });
       },
     };
     return stmt;
@@ -145,7 +145,7 @@ export class FakeD1 {
     throw new Error(`FakeD1.all: unhandled query: ${q}`);
   }
 
-  #runFor(q: string, bound: unknown[]): void {
+  #runFor(q: string, bound: unknown[]): Record<string, unknown> | undefined {
     if (q.startsWith("UPDATE terms SET guess_total")) {
       const t = this.terms.find((t) => t.slug === bound[1]);
       if (t) {
@@ -155,12 +155,18 @@ export class FakeD1 {
       return;
     }
     if (q.startsWith("INSERT INTO suggestions")) {
+      const id = this.suggestions.length + 1;
       this.suggestions.push({
-        id: this.suggestions.length + 1,
+        id,
         term: String(bound[0]),
         status: "new",
         created_at: new Date().toISOString(),
       });
+      return { last_row_id: id };
+    }
+    if (q.startsWith("UPDATE suggestions SET status")) {
+      const s = this.suggestions.find((s) => s.id === Number(bound[1]));
+      if (s) s.status = String(bound[0]);
       return;
     }
     if (q.startsWith("INSERT INTO cron_log")) {
