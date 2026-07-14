@@ -303,14 +303,17 @@ export async function addSeedTerm(
 
 // --- suggestions ---
 
+/** Inserts a suggestion and returns its row id (0 if the driver hides it). */
 export async function insertSuggestion(
   db: D1Database,
   term: string,
-): Promise<void> {
-  await db
+): Promise<number> {
+  const res = await db
     .prepare("INSERT INTO suggestions (term, status) VALUES (?, 'new')")
     .bind(term)
     .run();
+  const meta = res.meta as { last_row_id?: number } | undefined;
+  return Number(meta?.last_row_id ?? 0);
 }
 
 export async function listSuggestions(

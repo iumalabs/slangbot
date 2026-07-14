@@ -17,4 +17,8 @@ export interface Env {
   COOKIE_HMAC_SECRET: string;
   TELEGRAM_BOT_TOKEN?: string;
   TELEGRAM_CHANNEL_ID?: string;
+  /** Where suggestion-moderation notices go: your DM chat id or a private channel id. */
+  TELEGRAM_ADMIN_CHAT_ID?: string;
+  /** Shared secret Telegram echoes back in the webhook header. */
+  TELEGRAM_WEBHOOK_SECRET?: string;
 }

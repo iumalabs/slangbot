@@ -70,12 +70,14 @@ needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
 
 4. **Secrets** (never committed; `wrangler secret put <NAME>`):
 
-   | Secret                | Purpose                                                                |
-   | --------------------- | ---------------------------------------------------------------------- |
-   | `TURNSTILE_SECRET`    | Turnstile server-side key                                              |
-   | `COOKIE_HMAC_SECRET`  | signs visitor cookies + shuffles game choices (any long random string) |
-   | `TELEGRAM_BOT_TOKEN`  | optional, only if `TELEGRAM_ENABLED = "true"`                          |
-   | `TELEGRAM_CHANNEL_ID` | optional, e.g. `@daily_slangbot`                                       |
+   | Secret                    | Purpose                                                                |
+   | ------------------------- | ---------------------------------------------------------------------- |
+   | `TURNSTILE_SECRET`        | Turnstile server-side key                                              |
+   | `COOKIE_HMAC_SECRET`      | signs visitor cookies + shuffles game choices (any long random string) |
+   | `TELEGRAM_BOT_TOKEN`      | optional, only if `TELEGRAM_ENABLED = "true"`                          |
+   | `TELEGRAM_CHANNEL_ID`     | optional — the public channel, e.g. `@slangbotapp` (not the bot!)      |
+   | `TELEGRAM_ADMIN_CHAT_ID`  | optional — DM chat id for suggestion-moderation notices                |
+   | `TELEGRAM_WEBHOOK_SECRET` | optional — random string authenticating webhook calls                  |
 
    For local dev create `.dev.vars` (gitignored) with the same names.
 
@@ -198,7 +200,7 @@ deno task deploy:production
 Useful for emergencies (e.g. GitHub or Workers Builds is down) — day to day,
 push a branch and let the integration do it.
 
-### Telegram channel setup (t.me/daily_slangbot)
+### Telegram channel setup (t.me/slangbotapp)
 
 When `TELEGRAM_ENABLED = "true"`, the pipeline posts each new word to the
 channel as a playable mini-game: the illustration, the three definitions labeled
@@ -215,9 +217,31 @@ One-time setup:
    the token → `wrangler secret put TELEGRAM_BOT_TOKEN`.
 2. Add the bot to the channel as an **administrator** with the "Post messages"
    right (channel → Administrators → Add admin).
-3. `printf '@daily_slangbot' | wrangler secret put TELEGRAM_CHANNEL_ID`.
+3. `printf '@slangbotapp' | wrangler secret put TELEGRAM_CHANNEL_ID` — the
+   **channel** username, not the bot's.
 4. `TELEGRAM_ENABLED` is already `"true"` in `wrangler.toml`; without the two
    secrets the step is silently skipped, so nothing breaks before setup.
+
+### Suggestion moderation from Telegram
+
+Every reader suggestion triggers a DM to you with inline **✅ approve / ❌
+reject** buttons; pressing one updates the queue in D1 instantly (same effect as
+the admin panel). Powered by a Telegram webhook served by the Worker at
+`POST /api/telegram/webhook`, authenticated via the secret token Telegram echoes
+back in a header — foreign calls get 403.
+
+One-time setup:
+
+1. Find your DM chat id: send `/start` to your bot, then open
+   `https://api.telegram.org/bot<TOKEN>/getUpdates` — your chat id is
+   `result[0].message.chat.id` (a positive number).
+   `printf '<id>' | wrangler secret put TELEGRAM_ADMIN_CHAT_ID`. (A private
+   notification channel id like `-100…` works here too if you prefer one hub for
+   all your apps — but beware that anyone in that channel can press the
+   buttons.)
+2. `openssl rand -hex 16 | tr -d '\n' | wrangler secret put TELEGRAM_WEBHOOK_SECRET`.
+3. Deploy, then press **register Telegram webhook** in `/admin` (one click,
+   re-runnable any time).
 
 ### Turnstile setup
 

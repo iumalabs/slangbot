@@ -17,7 +17,7 @@ import {
   setSuggestionStatus,
 } from "../lib/d1.ts";
 import { todayUTC } from "../lib/i18n.ts";
-import { postTermToTelegram } from "../pipeline/telegram.ts";
+import { postTermToTelegram, tgCall } from "../pipeline/telegram.ts";
 import {
   DEFAULT_BLOCKLIST,
   DEFAULT_SOURCES,
@@ -27,7 +27,7 @@ import {
 } from "../lib/kv.ts";
 import { runDailyPipeline } from "../pipeline/run.ts";
 import { renderPage } from "./render.tsx";
-import { SITE_NAME } from "../config.ts";
+import { CANONICAL_ORIGIN, SITE_NAME } from "../config.ts";
 
 export const admin = new Hono<{ Bindings: Env }>();
 
@@ -101,6 +101,13 @@ admin.get("/admin", async (c) => {
         </form>
         <form method="post" action="/admin/telegram" className="admin-inline">
           <button type="submit">post today's word to Telegram</button>
+        </form>
+        <form
+          method="post"
+          action="/admin/telegram-webhook"
+          className="admin-inline"
+        >
+          <button type="submit">register Telegram webhook</button>
         </form>
       </section>
 
@@ -278,6 +285,33 @@ admin.post("/admin/telegram", async (c) => {
       { status: 500 },
     );
   }
+});
+
+// One-click Telegram webhook registration, so suggestion-moderation buttons
+// (callback_query updates) reach POST /api/telegram/webhook.
+admin.post("/admin/telegram-webhook", async (c) => {
+  if (!c.env.TELEGRAM_BOT_TOKEN || !c.env.TELEGRAM_WEBHOOK_SECRET) {
+    const msg =
+      "TELEGRAM_BOT_TOKEN / TELEGRAM_WEBHOOK_SECRET secrets are not configured";
+    if (wantsJson(c)) return c.json({ ok: false, error: msg }, 500);
+    return await renderPage(
+      <AdminShell title="telegram webhook">
+        <p>{msg}</p>
+      </AdminShell>,
+      { status: 500 },
+    );
+  }
+  const result = await tgCall(c.env.TELEGRAM_BOT_TOKEN, "setWebhook", {
+    url: `${CANONICAL_ORIGIN}/api/telegram/webhook`,
+    secret_token: c.env.TELEGRAM_WEBHOOK_SECRET,
+    allowed_updates: ["callback_query"],
+  });
+  if (wantsJson(c)) return c.json({ ok: true, message: result });
+  return await renderPage(
+    <AdminShell title="telegram webhook">
+      <p>setWebhook: {result}</p>
+    </AdminShell>,
+  );
 });
 
 admin.post("/admin/suggestion", async (c) => {

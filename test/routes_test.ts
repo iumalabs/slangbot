@@ -227,6 +227,52 @@ Deno.test("suggest: overlong terms are truncated to 40 chars", async () => {
   }
 });
 
+Deno.test("telegram webhook: rejects wrong secret, applies moderation", async () => {
+  const { db, env } = setup();
+  db.suggestions.push({
+    id: 1,
+    term: "skibidi",
+    status: "new",
+    created_at: "now",
+  });
+  const envWithHook = {
+    ...env,
+    TELEGRAM_WEBHOOK_SECRET: "hook-secret",
+  };
+
+  const post = (secret: string | null, body: unknown) =>
+    api.request(
+      new Request("http://localhost/api/telegram/webhook", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(secret ? { "X-Telegram-Bot-Api-Secret-Token": secret } : {}),
+        },
+        body: JSON.stringify(body),
+      }),
+      {},
+      envWithHook,
+    );
+
+  // Wrong/absent secret → 403, nothing changes.
+  assertEquals((await post(null, {})).status, 403);
+  assertEquals((await post("nope", {})).status, 403);
+
+  // Approve button press updates the suggestion.
+  const approve = await post("hook-secret", {
+    callback_query: { id: "cb1", data: "sug:approve:1" },
+  });
+  assertEquals(approve.status, 200);
+  assertEquals(db.suggestions[0].status, "approved");
+
+  // Unknown callback data is acknowledged without side effects.
+  const noop = await post("hook-secret", {
+    callback_query: { id: "cb2", data: "unrelated" },
+  });
+  assertEquals(noop.status, 200);
+  assertEquals(db.suggestions[0].status, "approved");
+});
+
 Deno.test("health endpoint reports pipeline state", async () => {
   const { env } = setup();
   const res = await api.request("http://localhost/api/health", {}, env);
