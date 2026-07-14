@@ -51,7 +51,7 @@ ACCESS_TEAM_DOMAIN = "yugai"
 # it is visible in every Access JWT payload). Copy from the Access app's
 # Overview page in the Zero Trust dashboard.
 ADMIN_ACCESS_AUD = "124c4d91816b347e640227f38be8b261ee3dc22481c6c9601ed6f114a9a288b9"
-# Feature flag for the Telegram autopost step (t.me/slangbotapp): the daily
+# Feature flag for the Telegram autopost step (t.me/daily_slangbot): the daily
 # word is posted as illustration + A/B/C definitions + a native quiz poll.
 # Requires the TELEGRAM_BOT_TOKEN and TELEGRAM_CHANNEL_ID secrets.
 TELEGRAM_ENABLED = "true"

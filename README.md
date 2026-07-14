@@ -75,7 +75,7 @@ needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
    | `TURNSTILE_SECRET`    | Turnstile server-side key                                              |
    | `COOKIE_HMAC_SECRET`  | signs visitor cookies + shuffles game choices (any long random string) |
    | `TELEGRAM_BOT_TOKEN`  | optional, only if `TELEGRAM_ENABLED = "true"`                          |
-   | `TELEGRAM_CHANNEL_ID` | optional, e.g. `@slangbotapp`                                          |
+   | `TELEGRAM_CHANNEL_ID` | optional, e.g. `@daily_slangbot`                                       |
 
    For local dev create `.dev.vars` (gitignored) with the same names.
 
@@ -198,7 +198,7 @@ deno task deploy:production
 Useful for emergencies (e.g. GitHub or Workers Builds is down) — day to day,
 push a branch and let the integration do it.
 
-### Telegram channel setup (t.me/slangbotapp)
+### Telegram channel setup (t.me/daily_slangbot)
 
 When `TELEGRAM_ENABLED = "true"`, the pipeline posts each new word to the
 channel as a playable mini-game: the illustration, the three definitions labeled
@@ -215,7 +215,7 @@ One-time setup:
    the token → `wrangler secret put TELEGRAM_BOT_TOKEN`.
 2. Add the bot to the channel as an **administrator** with the "Post messages"
    right (channel → Administrators → Add admin).
-3. `printf '@slangbotapp' | wrangler secret put TELEGRAM_CHANNEL_ID`.
+3. `printf '@daily_slangbot' | wrangler secret put TELEGRAM_CHANNEL_ID`.
 4. `TELEGRAM_ENABLED` is already `"true"` in `wrangler.toml`; without the two
    secrets the step is silently skipped, so nothing breaks before setup.
 

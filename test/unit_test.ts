@@ -225,7 +225,7 @@ Deno.test("image prompt never contains the term and bans text/humans", () => {
 // --- telegram posts ---
 
 const TG_INPUT = {
-  channelId: "@slangbotapp",
+  channelId: "@daily_slangbot",
   siteName: "slangbot",
   dayNumber: 7,
   term: "bussin",
