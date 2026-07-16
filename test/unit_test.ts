@@ -16,7 +16,7 @@ import { choiceOrder, correctIndex, shuffledChoices } from "../src/lib/game.ts";
 import { signValue, verifyValue } from "../src/lib/cookies.ts";
 import { extractJson } from "../src/ai/gateway.ts";
 import { parsePickJson } from "../src/pipeline/pick.ts";
-import { parseEntryJson } from "../src/pipeline/generate.ts";
+import { checkGameBalance, parseEntryJson } from "../src/pipeline/generate.ts";
 import { parseIllustrationVerdict } from "../src/pipeline/illustrate.ts";
 import {
   buildSuggestionNotice,
@@ -186,6 +186,44 @@ Deno.test("parseEntryJson rejects missing fields and short fake lists", () => {
   const oneFake = JSON.parse(GOOD_ENTRY);
   oneFake.fake_definitions_en = ["only one"];
   assertThrows(() => parseEntryJson(JSON.stringify(oneFake)));
+});
+
+// --- game balance guard ---
+
+function balancedEntry() {
+  const real =
+    "Describes a person so deeply immersed in online discourse that offline norms stop applying to them.";
+  const fake1 =
+    "Describes the habit of resurfacing years-old posts to win a current argument in a comment thread.";
+  const fake2 =
+    "Describes an account that only posts during platform outages to farm engagement from confusion.";
+  return parseEntryJson(JSON.stringify({
+    ...JSON.parse(GOOD_ENTRY),
+    term: "chronically online",
+    definition_en: real,
+    definition_ru: real,
+    fake_definitions_en: [fake1, fake2],
+    fake_definitions_ru: [fake1, fake2],
+  }));
+}
+
+Deno.test("checkGameBalance passes a balanced entry", () => {
+  assertEquals(checkGameBalance(balancedEntry()), null);
+});
+
+Deno.test("checkGameBalance flags length imbalance", () => {
+  const entry = balancedEntry();
+  entry.fake_definitions_en = ["Too short.", entry.fake_definitions_en[1]];
+  const problem = checkGameBalance(entry);
+  assert(problem !== null && problem.includes("same length"));
+});
+
+Deno.test("checkGameBalance flags the term leaking into an option", () => {
+  const entry = balancedEntry();
+  entry.definition_ru =
+    "Термин chronically online описывает человека, который слишком много времени проводит в интернете.";
+  const problem = checkGameBalance(entry);
+  assert(problem !== null && problem.includes("contains the term"));
 });
 
 // --- illustration validation ---
