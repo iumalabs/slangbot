@@ -83,23 +83,81 @@ export async function generateEntry(
     { role: "system", content: system },
     { role: "user", content: user },
   ], 2400);
+
+  let feedback: string;
   try {
-    return parseEntryJson(raw);
-  } catch (firstError) {
-    // One retry for malformed JSON — still within the <=3 text calls/day budget.
-    const retry = await runText(ai, [
-      { role: "system", content: system },
-      { role: "user", content: user },
-      { role: "assistant", content: raw.slice(0, 1000) },
-      {
-        role: "user",
-        content:
-          `Your previous output was invalid (${
-            (firstError as Error).message
-          }). ` +
-          `Respond again with STRICT valid JSON only.`,
-      },
-    ], 2400);
-    return parseEntryJson(retry);
+    const entry = parseEntryJson(raw);
+    const balance = checkGameBalance(entry);
+    if (!balance) return entry;
+    feedback = balance;
+  } catch (parseError) {
+    feedback = (parseError as Error).message;
   }
+
+  // One retry for malformed JSON or a giveaway-prone game — still within the
+  // <=3 text calls/day budget.
+  const retry = await runText(ai, [
+    { role: "system", content: system },
+    { role: "user", content: user },
+    { role: "assistant", content: raw.slice(0, 1000) },
+    {
+      role: "user",
+      content: `Your previous output was invalid (${feedback}). ` +
+        `Respond again with STRICT valid JSON only, fixing exactly that.`,
+    },
+  ], 2400);
+  const entry = parseEntryJson(retry);
+  const balance = checkGameBalance(entry);
+  if (balance) {
+    // Accept anyway — a slightly lopsided game beats no issue at all — but
+    // leave a trace for the cron log / console.
+    console.warn(`game balance still off after retry: ${balance}`);
+  }
+  return entry;
+}
+
+/**
+ * Guard against the two giveaways that let readers spot the real definition
+ * without knowing the term: length imbalance between the real definition and
+ * the fakes, and any of the three options quoting the term itself.
+ * Returns a problem description for the retry prompt, or null when balanced.
+ * Exported for tests.
+ */
+export function checkGameBalance(entry: GeneratedEntry): string | null {
+  const problems: string[] = [];
+  const langs = [
+    {
+      lang: "en",
+      real: entry.definition_en,
+      fakes: entry.fake_definitions_en,
+    },
+    {
+      lang: "ru",
+      real: entry.definition_ru,
+      fakes: entry.fake_definitions_ru,
+    },
+  ];
+  const termNeedle = entry.term.toLowerCase();
+
+  for (const { lang, real, fakes } of langs) {
+    for (const text of [real, ...fakes]) {
+      if (text.toLowerCase().includes(termNeedle)) {
+        problems.push(
+          `a ${lang} definition option contains the term itself — rephrase without it`,
+        );
+        break;
+      }
+    }
+    for (const fake of fakes) {
+      const ratio = fake.length / Math.max(real.length, 1);
+      if (ratio < 0.55 || ratio > 1.8) {
+        problems.push(
+          `${lang} fake definitions must be about the same length as the real one ` +
+            `(real: ${real.length} chars, fake: ${fake.length} chars)`,
+        );
+        break;
+      }
+    }
+  }
+  return problems.length > 0 ? problems.join("; ") : null;
 }

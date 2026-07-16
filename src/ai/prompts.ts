@@ -51,8 +51,21 @@ Hard rules:
 - Never fabricate etymology. If the origin is uncertain, say so — "origin disputed" is a
   valid answer.
 - Keep everything SFW-adjacent and educational; crude terms get tasteful treatment.
-- The two fake definitions per language must be plausible-but-wrong: same register,
-  similar length as the real definition, believable to a non-expert.
+
+THE GUESSING GAME (the most important part). The two fake definitions per language are
+shown next to the real one and readers must NOT be able to tell which is which. Rules
+for definition_en/definition_ru AND both fakes, all six texts:
+- All the same shape: 1-2 sentences, 120-220 characters. The real definition must NOT
+  be the longest or the most detailed one — readers exploit that instantly.
+- Never quote, spell out, restate or translate the term itself inside any of the six
+  definition texts ("chronically online refers to..." is an instant giveaway).
+- Fakes stay INSIDE internet/slang culture: each describes a different plausible online
+  behavior, aesthetic, meme dynamic or social pattern the term could believably mean.
+  Never "a marketing term", "a medical term", "a type of fruit/animal/dance" — foreign
+  domains are giveaways.
+- Fakes must be confidently and specifically wrong, not vague or absurd. A good fake
+  reads like a real dictionary entry for a neighboring concept.
+- Same tone, same person, same level of jargon across all three options in each language.
 
 Respond with STRICT JSON only (no prose, no code fences) matching exactly:
 {
@@ -62,7 +75,7 @@ Respond with STRICT JSON only (no prose, no code fences) matching exactly:
   "respelled_ru": string,      // Cyrillic respelling for RU readers, e.g. "риз"
   "origin_en": string,         // 2-4 sentences, where it came from
   "origin_ru": string,
-  "definition_en": string,     // 1-3 sentences, the social-context definition
+  "definition_en": string,     // 1-2 sentences, 120-220 chars, never contains the term
   "definition_ru": string,
   "example_en": string,        // ONE example sentence, as seen in the wild
   "example_note_en": string,   // plain-English explanation of the example
@@ -72,8 +85,8 @@ Respond with STRICT JSON only (no prose, no code fences) matching exactly:
   "not_ok_tags_en": string[],  // 2-4 short "not ok" contexts
   "not_ok_tags_ru": string[],
   "related": string[],         // 2-4 related slang terms (just the terms)
-  "fake_definitions_en": [string, string],
-  "fake_definitions_ru": [string, string]
+  "fake_definitions_en": [string, string],  // same length/register as definition_en
+  "fake_definitions_ru": [string, string]   // same length/register as definition_ru
 }`,
     user:
       `Write today's full bilingual entry for the term: "${term}". STRICT JSON only.`,
