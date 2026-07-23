@@ -1,9 +1,12 @@
 # slangbot
 
 **the Internet's Unofficial Manual of Argot** — a fully autonomous daily
-dictionary of American/internet slang, deployed at [iuma.dev](https://iuma.dev).
-"slangbot" is the product name (see `SITE_NAME` in `src/config.ts`); "iuma.dev"
-is just the domain the owner attached to it.
+dictionary of American/internet slang, deployed at
+[slangbot.maksimyugai.com](https://slangbot.maksimyugai.com). "slangbot" is the
+product name (see `SITE_NAME` in `src/config.ts` and `CANONICAL_ORIGIN` for the
+live domain). The underlying Cloudflare resources (Worker name, D1/KV/R2, AI
+Gateway) still carry the project's original codename, "iuma" — that's internal
+plumbing only, see `CLAUDE.md` → Naming.
 
 Every day at 00:00 UTC a cron job picks one trending slang term, writes a full
 bilingual (EN/RU) entry, generates two plausible fake definitions for the
@@ -17,17 +20,17 @@ specifiers; no `package.json`, no npm/node/npx).
 
 ## Commands
 
-| Task                                               | What it does                                                                                                                |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `deno task dev`                                    | client-bundle watcher + `wrangler dev --test-scheduled`                                                                     |
-| `deno task build:client`                           | bundle `assets/client.js` (islands hydration)                                                                               |
-| `deno task build`                                  | full build for Workers Builds (deno install + client)                                                                       |
-| `deno task deploy:preview`                         | upload a Worker version (used by Workers Builds for non-production branches, and locally as an escape hatch)                |
-| `deno task deploy:production`                      | apply D1 migrations + deploy to iuma.dev (used by Workers Builds for the production branch, and locally as an escape hatch) |
-| `deno task test`                                   | full test suite (`deno test -A`)                                                                                            |
-| `deno task lint`                                   | `deno lint` + `deno fmt --check`                                                                                            |
-| `deno task db:migrate:local` / `db:migrate:remote` | apply D1 migrations                                                                                                         |
-| `deno task seed`                                   | insert one demo term into the local D1                                                                                      |
+| Task                                               | What it does                                                                                                                                |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deno task dev`                                    | client-bundle watcher + `wrangler dev --test-scheduled`                                                                                     |
+| `deno task build:client`                           | bundle `assets/client.js` (islands hydration)                                                                                               |
+| `deno task build`                                  | full build for Workers Builds (deno install + client)                                                                                       |
+| `deno task deploy:preview`                         | upload a Worker version (used by Workers Builds for non-production branches, and locally as an escape hatch)                                |
+| `deno task deploy:production`                      | apply D1 migrations + deploy to slangbot.maksimyugai.com (used by Workers Builds for the production branch, and locally as an escape hatch) |
+| `deno task test`                                   | full test suite (`deno test -A`)                                                                                                            |
+| `deno task lint`                                   | `deno lint` + `deno fmt --check`                                                                                                            |
+| `deno task db:migrate:local` / `db:migrate:remote` | apply D1 migrations                                                                                                                         |
+| `deno task seed`                                   | insert one demo term into the local D1                                                                                                      |
 
 `deno fmt`, `deno lint`, and `deno task check` are all clean.
 
@@ -91,10 +94,13 @@ needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
 6. **Deploys — Cloudflare Workers ↔ GitHub integration** (see the "Deploys"
    section below); a local escape hatch exists too, but isn't the default.
 
-7. **Custom domain (manual, owner-only step)**: attach `iuma.dev` to the Worker
-   in the dashboard (Workers → iuma → Settings → Domains & Routes). This repo
-   deliberately configures no routes. `.dev` is HSTS-preloaded, so the site is
-   HTTPS-only; all generated URLs already use `https://iuma.dev`.
+7. **Custom domain**: `wrangler.toml` declares
+   `[[routes]] pattern = "slangbot.maksimyugai.com" custom_domain = true`, so
+   the next deploy attaches it automatically — **provided `maksimyugai.com` is
+   already an active zone in this Cloudflare account** (Dashboard → Add a
+   domain, if not). If you ever repoint the app at a different domain, this is
+   the only place to change it (plus the Turnstile/Access dashboard settings
+   below, which aren't code).
 
 ## Deploys (Cloudflare Workers ↔ GitHub integration)
 
@@ -102,7 +108,7 @@ All deploys run through **Workers Builds** — Cloudflare's own Git integration.
 Nothing deploys from a laptop:
 
 - push to **`main`** → Workers Builds builds and deploys to production
-  (iuma.dev);
+  (slangbot.maksimyugai.com);
 - push to **any other branch** → Workers Builds uploads a _version_ and posts
   its preview URL (`https://<version>-iuma.<account>.workers.dev`) on the
   commit/PR — production stays untouched;
@@ -192,7 +198,7 @@ deno task build
 # upload a preview version (production untouched, prints the preview URL):
 deno task deploy:preview
 
-# deploy straight to production (iuma.dev) — use sparingly; it bypasses the
+# deploy straight to production (slangbot.maksimyugai.com) — use sparingly; it bypasses the
 # PR checks and can be overwritten by the next Workers Builds deploy from main:
 deno task deploy:production
 ```
@@ -250,11 +256,11 @@ One-time setup:
 
 ### Turnstile setup
 
-Dashboard → Turnstile → Add site → domain `iuma.dev` (plus your `*.workers.dev`
-host for testing) → widget type "Managed". Copy the **site key** into
-`TURNSTILE_SITE_KEY` and the **secret key** into the `TURNSTILE_SECRET` secret.
-The committed keys are Cloudflare's official test keys, which always pass — fine
-for local dev.
+Dashboard → Turnstile → Add site → domain `slangbot.maksimyugai.com` (plus your
+`*.workers.dev` host for testing) → widget type "Managed". Copy the **site key**
+into `TURNSTILE_SITE_KEY` and the **secret key** into the `TURNSTILE_SECRET`
+secret. The committed keys are Cloudflare's official test keys, which always
+pass — fine for local dev.
 
 ### Cloudflare Access setup (admin panel)
 
@@ -263,9 +269,11 @@ verification inside the Worker (signature + `aud` against the team certs — a
 spoofed `Cf-Access-Jwt-Assertion` header is rejected).
 
 1. Zero Trust dashboard → Access → Applications → **Add an application** →
-   Self-hosted.
-2. Application domain: `iuma.dev/admin*`. During development add a second domain
-   for `iuma.<account>.workers.dev/admin*`.
+   Self-hosted. (Migrating from a previous domain? Edit the existing
+   application's domain field instead of creating a new one — the AUD tag stays
+   the same, so `ADMIN_ACCESS_AUD` in `wrangler.toml` doesn't change.)
+2. Application domain: `slangbot.maksimyugai.com/admin*`. During development add
+   a second domain for `iuma.<account>.workers.dev/admin*`.
 3. Policy: reuse an existing policy if you already have one that fits (e.g. an
    email allowlist combined with `Require: Warp` + `Require: Gateway`, so
    `/admin` is only reachable from a device connected through your Zero Trust
@@ -284,14 +292,15 @@ trend-source list (KV), inspect the last 50 cron log rows and the seed supply.
 ### Manual trigger (don't wait for the 00:00 UTC cron)
 
 The daily pipeline is idempotent (upserts by date), so re-running it is always
-safe. Visit `https://iuma.dev/admin` (through your Zero Trust WARP client, per
-the policy above), click "re-run today's pipeline" — or fill in a date under
-"regenerate" to redo/backfill a specific day, optionally "illustration only".
+safe. Visit `https://slangbot.maksimyugai.com/admin` (through your Zero Trust
+WARP client, per the policy above), click "re-run today's pipeline" — or fill in
+a date under "regenerate" to redo/backfill a specific day, optionally
+"illustration only".
 
 `/admin/run` and `/admin/regenerate` also respond with JSON instead of the admin
 HTML page when the caller sends `Accept: application/json` — handy for
 `curl`-ing them from your own WARP-connected machine
-(`curl -X POST https://iuma.dev/admin/run -H "Accept: application/json"`,
+(`curl -X POST https://slangbot.maksimyugai.com/admin/run -H "Accept: application/json"`,
 authenticated the same way a browser would be, e.g. via a cached Access session
 cookie or `cloudflared access curl`). There's no GitHub Actions / Service Token
 path here on purpose — a `Require: Warp` policy has no way to pass for a cloud

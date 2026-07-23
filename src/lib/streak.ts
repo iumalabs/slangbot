@@ -36,7 +36,7 @@ export function weekGrid(results: ResultsMap, today: string): string {
   return grid;
 }
 
-/** Full share string, e.g. `iuma day 142 — my week: 🟩🟩🟥 iuma.dev`. */
+/** Full share string, e.g. `slangbot day 142 — my week: 🟩🟩🟥 slangbot.maksimyugai.com`. */
 export function shareString(
   siteName: string,
   dayNumber: number,

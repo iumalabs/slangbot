@@ -1,6 +1,5 @@
-# iuma — autonomous slang-of-the-day dictionary.
-# NOTE: no custom domain / routes here on purpose: the owner attaches iuma.dev
-# manually in the Cloudflare dashboard. This config deploys to workers.dev.
+# slangbot — autonomous slang-of-the-day dictionary.
+# Production domain: slangbot.maksimyugai.com (see the [[routes]] block below).
 
 name = "iuma"
 main = "src/index.tsx"
@@ -16,7 +15,7 @@ workers_dev = false
 preview_urls = true
 
 [[routes]]
-pattern = "iuma.dev"
+pattern = "slangbot.maksimyugai.com"
 custom_domain = true
 
 [assets]

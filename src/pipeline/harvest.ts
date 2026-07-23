@@ -1,6 +1,7 @@
 /** Step 1: harvest candidate terms from public sources + suggestions + seeds. */
 
 import type { Env } from "../env.ts";
+import { CANONICAL_ORIGIN } from "../config.ts";
 import { getSources } from "../lib/kv.ts";
 import { getApprovedSuggestions, getUnusedSeedTerms } from "../lib/d1.ts";
 
@@ -14,7 +15,7 @@ const FETCH_TIMEOUT_MS = 8000;
 async function safeFetchText(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
-      headers: { "User-Agent": "iuma-bot/1.0 (+https://iuma.dev)" },
+      headers: { "User-Agent": `slangbot-bot/1.0 (+${CANONICAL_ORIGIN})` },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!res.ok) return null;
