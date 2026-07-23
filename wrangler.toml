@@ -26,8 +26,8 @@ binding = "AI"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "iuma-db"
-database_id = "fce762c2-3984-4803-960c-64e416e970ac"
+database_name = "slangbot-db"
+database_id = "657f82da-d80b-41de-8f69-998e25a7b94a"
 migrations_dir = "migrations"
 
 [[kv_namespaces]]

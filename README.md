@@ -54,7 +54,7 @@ needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
 1. **Create resources** (one-time):
 
    ```sh
-   deno run -A npm:wrangler@latest d1 create iuma-db
+   deno run -A npm:wrangler@latest d1 create slangbot-db
    deno run -A npm:wrangler@latest kv namespace create iuma-kv
    deno run -A npm:wrangler@latest r2 bucket create iuma-images
    ```
@@ -136,7 +136,7 @@ below):
 
 ```json
 "deploy:preview": "deno run -A npm:wrangler@latest versions upload",
-"deploy:production": "deno run -A npm:wrangler@latest d1 migrations apply iuma-db --remote && deno run -A npm:wrangler@latest deploy"
+"deploy:production": "deno run -A npm:wrangler@latest d1 migrations apply slangbot-db --remote && deno run -A npm:wrangler@latest deploy"
 ```
 
 Notes:
@@ -156,6 +156,14 @@ Notes:
   `*-iuma.<account>.workers.dev` application. Dashboard-only switch.
 
 ### D1 migrations in this flow
+
+The database was migrated from `iuma-db` to `slangbot-db` on 2026-07-23 (D1 has
+no rename, so this was create + `d1 export`/`execute --file` copy of
+`terms`/`suggestions`/`cron_log`/`seed_terms`, verified by exact row-count and
+`used`-flag matches). `iuma-db` is left untouched as a point-in-time backup —
+delete it manually once `slangbot-db` has been live for a while and you're
+confident nothing needs recovering from it; it won't receive new writes once
+this PR deploys.
 
 The production deploy command applies pending migrations **before** deploying
 (`d1 migrations apply … && wrangler deploy`). This is safe and automatic:
