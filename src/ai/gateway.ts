@@ -9,7 +9,7 @@ export interface ChatMessage {
 
 /**
  * Run a model through the AI Gateway; if the gateway is missing or broken
- * (e.g. AiGatewayError 2001 before the owner creates "iuma-gw" in the
+ * (e.g. AiGatewayError 2001 before the owner creates "slangbot-gw" in the
  * dashboard), fall back to a direct Workers AI call so the daily issue still
  * ships. The gateway is observability, not a functional dependency.
  */

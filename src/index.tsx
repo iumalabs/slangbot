@@ -1,5 +1,5 @@
 /**
- * iuma — single Worker entrypoint: Hono app (fetch) + daily cron (scheduled).
+ * slangbot — single Worker entrypoint: Hono app (fetch) + daily cron (scheduled).
  *
  * COST GUARANTEE: no route in this app calls Workers AI. Model calls exist
  * only under src/pipeline/ and src/ai/, reached from `scheduled` and the

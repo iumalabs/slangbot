@@ -76,8 +76,14 @@ Deno.test("weekGrid skips unplayed days and truncates at today", () => {
 Deno.test("shareString matches the documented format", () => {
   const results = { "2026-07-06": "g", "2026-07-07": "r" } as const;
   assertEquals(
-    shareString("iuma", 142, results, "2026-07-07", "iuma.dev"),
-    "iuma day 142 — my week: 🟩🟥 iuma.dev",
+    shareString(
+      "slangbot",
+      142,
+      results,
+      "2026-07-07",
+      "slangbot.maksimyugai.com",
+    ),
+    "slangbot day 142 — my week: 🟩🟥 slangbot.maksimyugai.com",
   );
 });
 
@@ -277,8 +283,8 @@ const TG_INPUT = {
   pos: "adj., internet",
   choices: ["REAL definition", "FAKE one", "FAKE two"] as const,
   correctIndex: 0,
-  permalink: "https://iuma.dev/term/bussin",
-  imageUrl: "https://iuma.dev/img/terms/bussin.png",
+  permalink: "https://slangbot.maksimyugai.com/term/bussin",
+  imageUrl: "https://slangbot.maksimyugai.com/img/terms/bussin.png",
 };
 
 Deno.test("telegram posts: photo + labeled options + quiz poll", () => {

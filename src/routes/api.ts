@@ -28,7 +28,7 @@ import { todayUTC } from "../lib/i18n.ts";
 
 export const api = new Hono<{ Bindings: Env }>();
 
-const UID_COOKIE = "iuma_uid";
+const UID_COOKIE = "slangbot_uid";
 
 /** Get-or-create the signed anonymous visitor id (no PII — a random UUID). */
 async function visitorId(

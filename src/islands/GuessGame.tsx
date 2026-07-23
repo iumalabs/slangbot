@@ -27,8 +27,8 @@ interface GuessResponse {
   entry: LocalizedEntry;
 }
 
-const RESULTS_KEY = "iuma:results";
-const CHOICE_KEY = "iuma:choice:";
+const RESULTS_KEY = "slangbot:results";
+const CHOICE_KEY = "slangbot:choice:";
 
 function loadResults(): ResultsMap {
   try {
@@ -43,7 +43,7 @@ function saveResult(date: string, result: DayResult) {
   if (!results[date]) {
     results[date] = result;
     localStorage.setItem(RESULTS_KEY, JSON.stringify(results));
-    globalThis.dispatchEvent(new CustomEvent("iuma:result"));
+    globalThis.dispatchEvent(new CustomEvent("slangbot:result"));
   }
 }
 

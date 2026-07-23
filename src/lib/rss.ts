@@ -1,4 +1,4 @@
-/** RSS + sitemap generation. All URLs are https (iuma.dev is HSTS-preloaded). */
+/** RSS + sitemap generation. All URLs are https (CANONICAL_ORIGIN is always https). */
 
 import { CANONICAL_ORIGIN, SITE_NAME, TAGLINE } from "../config.ts";
 import type { TermRow } from "./d1.ts";
