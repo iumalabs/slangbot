@@ -61,9 +61,9 @@ needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
 
    Paste the printed `database_id` and KV `id` into `wrangler.toml`.
 
-2. **Create the AI Gateway** named `iuma-gw`: dashboard → AI → AI Gateway →
-   Create gateway → name `iuma-gw` (enable logging). All model calls are routed
-   through it.
+2. **Create the AI Gateway** named `slangbot-gw`: dashboard → AI → AI Gateway →
+   Create gateway → name `slangbot-gw` (enable logging). All model calls are
+   routed through it.
 
 3. **Migrations**:
 
@@ -331,7 +331,8 @@ check fails open — a broken validator never blocks the daily issue.
 
 Comfortably inside the free tier, and — because AI usage is a function of the
 cron only — **traffic volume has zero effect on AI spend.** All calls go through
-the `iuma-gw` AI Gateway with logging, and every text call sets `max_tokens`.
+the `slangbot-gw` AI Gateway with logging, and every text call sets
+`max_tokens`.
 
 ## Architecture notes
 
