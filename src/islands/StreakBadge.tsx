@@ -26,7 +26,7 @@ export function StreakBadge(props: StreakBadgeProps) {
       try {
         setResults(
           JSON.parse(
-            localStorage.getItem("iuma:results") ?? "{}",
+            localStorage.getItem("slangbot:results") ?? "{}",
           ) as ResultsMap,
         );
       } catch {
@@ -34,8 +34,8 @@ export function StreakBadge(props: StreakBadgeProps) {
       }
     };
     load();
-    globalThis.addEventListener("iuma:result", load);
-    return () => globalThis.removeEventListener("iuma:result", load);
+    globalThis.addEventListener("slangbot:result", load);
+    return () => globalThis.removeEventListener("slangbot:result", load);
   }, []);
 
   const grid = weekGrid(results, props.date);

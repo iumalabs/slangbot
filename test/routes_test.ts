@@ -78,7 +78,7 @@ Deno.test("guess: repeat guesses by the same visitor are not recounted", async (
     env,
   );
   const cookie = first.headers.get("set-cookie")?.split(";")[0] ?? "";
-  assert(cookie.startsWith("iuma_uid="));
+  assert(cookie.startsWith("slangbot_uid="));
 
   const second = await api.request(
     guessReq({ slug: "rizz", choiceIndex: right }, cookie),
