@@ -1,7 +1,7 @@
 # slangbot — autonomous slang-of-the-day dictionary.
 # Production domain: slangbot.maksimyugai.com (see the [[routes]] block below).
 
-name = "iuma"
+name = "slangbot"
 main = "src/index.tsx"
 compatibility_date = "2025-06-01"
 compatibility_flags = ["nodejs_compat"]
