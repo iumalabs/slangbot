@@ -26,7 +26,7 @@ import {
   suggestionCallbackData,
   telegramHeader,
 } from "../src/pipeline/telegram.ts";
-import { imagePrompt } from "../src/ai/prompts.ts";
+import { imagePrompt, imageValidationPrompt } from "../src/ai/prompts.ts";
 import {
   extractTermsFromTitles,
   parseFeedTitles,
@@ -168,6 +168,7 @@ const GOOD_ENTRY = JSON.stringify({
   origin_ru: "о",
   definition_en: "d",
   definition_ru: "д",
+  illustration_brief_en: "a glowing object on a dark background",
   example_en: "e",
   example_note_en: "n",
   example_note_ru: "н",
@@ -263,6 +264,19 @@ Deno.test("parseIllustrationVerdict fails open on garbage", () => {
   assertEquals(parseIllustrationVerdict("").ok, true);
 });
 
+Deno.test("parseIllustrationVerdict flags an irrelevant image", () => {
+  const verdict = parseIllustrationVerdict(
+    '{"has_text": false, "has_humans": false, "is_relevant": false}',
+  );
+  assertEquals(verdict.ok, false);
+  assert(verdict.reason.includes("unrelated"));
+  // Defaults to relevant when the field is absent (older/lenient answers).
+  assertEquals(
+    parseIllustrationVerdict('{"has_text": false, "has_humans": false}').ok,
+    true,
+  );
+});
+
 Deno.test("image prompt never contains the term and bans text/humans", () => {
   const prompt = imagePrompt("something exceptionally good or high quality");
   assert(!prompt.includes("bussin"));
@@ -271,6 +285,15 @@ Deno.test("image prompt never contains the term and bans text/humans", () => {
   assert(prompt.includes("no hands"));
   const retry = imagePrompt("def", 1);
   assert(retry.startsWith("IMPORTANT"));
+});
+
+Deno.test("imageValidationPrompt embeds the brief for the relevance check", () => {
+  const prompt = imageValidationPrompt(
+    "a small boat swamped by a wave of reply icons",
+  );
+  assert(prompt.includes("is_relevant"));
+  assert(prompt.includes("a small boat swamped by a wave of reply icons"));
+  assert(prompt.includes("Default"));
 });
 
 // --- telegram posts ---

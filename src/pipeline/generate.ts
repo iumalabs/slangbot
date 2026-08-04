@@ -12,6 +12,7 @@ export interface GeneratedEntry {
   origin_ru: string;
   definition_en: string;
   definition_ru: string;
+  illustration_brief_en: string;
   example_en: string;
   example_note_en: string;
   example_note_ru: string;
@@ -61,6 +62,10 @@ export function parseEntryJson(raw: string): GeneratedEntry {
     origin_ru: str(d.origin_ru, "origin_ru"),
     definition_en: str(d.definition_en, "definition_en"),
     definition_ru: str(d.definition_ru, "definition_ru"),
+    illustration_brief_en: str(
+      d.illustration_brief_en,
+      "illustration_brief_en",
+    ),
     example_en: str(d.example_en, "example_en"),
     example_note_en: str(d.example_note_en, "example_note_en"),
     example_note_ru: str(d.example_note_ru, "example_note_ru"),
