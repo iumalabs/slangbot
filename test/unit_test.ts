@@ -8,6 +8,7 @@ import {
 import { slugify, uniqueSlug } from "../src/lib/slug.ts";
 import {
   currentStreak,
+  hasResultsThisWeek,
   shareString,
   weekGrid,
   weekStart,
@@ -70,9 +71,21 @@ Deno.test("weekGrid renders mixed results in order", () => {
   assertEquals(weekGrid(results, "2026-07-10"), "🟩🟩🟥🟩🟨");
 });
 
-Deno.test("weekGrid skips unplayed days and truncates at today", () => {
+Deno.test("weekGrid pads unplayed days and truncates at today", () => {
   const results = { "2026-07-06": "g", "2026-07-08": "r" } as const;
-  assertEquals(weekGrid(results, "2026-07-08"), "🟩🟥");
+  assertEquals(weekGrid(results, "2026-07-08"), "🟩⬜🟥");
+});
+
+Deno.test("hasResultsThisWeek", () => {
+  assertEquals(
+    hasResultsThisWeek({ "2026-07-06": "g" } as const, "2026-07-08"),
+    true,
+  );
+  assertEquals(
+    hasResultsThisWeek({ "2026-06-29": "g" } as const, "2026-07-08"),
+    false,
+  );
+  assertEquals(hasResultsThisWeek({}, "2026-07-08"), false);
 });
 
 Deno.test("shareString matches the documented format", () => {

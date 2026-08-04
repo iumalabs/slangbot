@@ -4,6 +4,7 @@ import type { Locale } from "../lib/i18n.ts";
 import { t } from "../content/i18n.ts";
 import {
   currentStreak,
+  hasResultsThisWeek,
   type ResultsMap,
   shareString,
   weekGrid,
@@ -40,7 +41,7 @@ export function StreakBadge(props: StreakBadgeProps) {
 
   const grid = weekGrid(results, props.date);
   const streak = currentStreak(results, props.date);
-  if (!grid) return null;
+  if (!hasResultsThisWeek(results, props.date)) return null;
 
   async function share() {
     const text = shareString(
