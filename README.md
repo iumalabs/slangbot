@@ -322,12 +322,22 @@ suggesting, browsing, RSS, and OG images are pure D1/KV/R2 work.
 | Illustration check  | `@cf/llava-hf/llava-1.5-7b-hf`             | 1–2                                   | ~100             |
 | **Total**           |                                            | **4–7**                               | **~2,000–3,700** |
 
+The Flux prompt is built from a dedicated `illustration_brief_en` field, not the
+guessing-game `definition_en` — the definition is deliberately vague (it must
+not be distinguishable from the two fakes, and never restates the term), which
+starved the illustrator of anything concrete and produced generic mood-board
+scenes with no real connection to the term. The brief is written purely for the
+image and may describe the term's actual meaning directly and literally.
+
 The illustration is validated after generation: LLaVA answers whether the image
-contains readable text or human figures (the two classic flux-1-schnell defects
-— the prompt already bans both and never mentions the term itself, since the
-model loves rendering quoted words as typography). A flagged image triggers
-exactly one stricter regeneration; the second result ships regardless, and the
-check fails open — a broken validator never blocks the daily issue.
+contains readable text, human figures (the two classic flux-1-schnell defects —
+the prompt already bans both and never quotes the term itself, since the model
+loves rendering quoted words as typography), or is simply unrelated to the
+brief. A flagged image triggers exactly one stricter regeneration; the second
+result ships regardless, and the check fails open — a broken validator never
+blocks the daily issue. The relevance check is deliberately lenient (any
+loose/metaphorical connection counts) since these are surreal editorial
+illustrations, not literal photos.
 
 Comfortably inside the free tier, and — because AI usage is a function of the
 cron only — **traffic volume has zero effect on AI spend.** All calls go through

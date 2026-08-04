@@ -12,6 +12,7 @@ export interface TermRow {
   origin_ru: string;
   definition_en: string;
   definition_ru: string;
+  illustration_brief_en: string;
   example_en: string;
   example_note_en: string;
   example_note_ru: string;
@@ -180,6 +181,7 @@ export interface NewTerm {
   origin_ru: string;
   definition_en: string;
   definition_ru: string;
+  illustration_brief_en: string;
   example_en: string;
   example_note_en: string;
   example_note_ru: string;
@@ -203,16 +205,18 @@ export async function upsertTermByDate(
     .prepare(
       `INSERT INTO terms (
         slug, term, date, pos, ipa, respelled_ru, origin_en, origin_ru,
-        definition_en, definition_ru, example_en, example_note_en, example_note_ru,
+        definition_en, definition_ru, illustration_brief_en,
+        example_en, example_note_en, example_note_ru,
         ok_tags_en, ok_tags_ru, not_ok_tags_en, not_ok_tags_ru,
         related_json, fake_defs_json, image_key, trend_source, suggested_by_reader,
         created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
       ON CONFLICT(date) DO UPDATE SET
         slug = excluded.slug, term = excluded.term, pos = excluded.pos,
         ipa = excluded.ipa, respelled_ru = excluded.respelled_ru,
         origin_en = excluded.origin_en, origin_ru = excluded.origin_ru,
         definition_en = excluded.definition_en, definition_ru = excluded.definition_ru,
+        illustration_brief_en = excluded.illustration_brief_en,
         example_en = excluded.example_en, example_note_en = excluded.example_note_en,
         example_note_ru = excluded.example_note_ru,
         ok_tags_en = excluded.ok_tags_en, ok_tags_ru = excluded.ok_tags_ru,
@@ -232,6 +236,7 @@ export async function upsertTermByDate(
       t.origin_ru,
       t.definition_en,
       t.definition_ru,
+      t.illustration_brief_en,
       t.example_en,
       t.example_note_en,
       t.example_note_ru,

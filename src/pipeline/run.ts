@@ -41,12 +41,14 @@ export async function runDailyPipeline(
   if (opts.imageOnly) {
     if (!existing) return `no entry for ${date}`;
     try {
+      // Pre-migration rows have no illustration_brief_en yet — fall back to
+      // the (weaker but still usable) definition text for those.
+      const brief = existing.illustration_brief_en || existing.definition_en;
       const { key, note } = await illustrate(
         env.AI,
         env.IMAGES,
         existing.slug,
-        existing.term,
-        existing.definition_en,
+        brief,
       );
       await setImageKey(db, existing.slug, key);
       await logCron(db, "illustrate", "ok", `regenerated ${key} (${note})`);
@@ -116,6 +118,7 @@ export async function runDailyPipeline(
     origin_ru: entry.origin_ru,
     definition_en: entry.definition_en,
     definition_ru: entry.definition_ru,
+    illustration_brief_en: entry.illustration_brief_en,
     example_en: entry.example_en,
     example_note_en: entry.example_note_en,
     example_note_ru: entry.example_note_ru,
@@ -146,8 +149,7 @@ export async function runDailyPipeline(
       env.AI,
       env.IMAGES,
       slug,
-      entry.term,
-      entry.definition_en,
+      entry.illustration_brief_en,
     );
     await setImageKey(db, slug, key);
     await logCron(db, "illustrate", "ok", `${key} (${note})`);

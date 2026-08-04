@@ -19,6 +19,7 @@ export function makeTermRow(overrides: Partial<TermRow> = {}): TermRow {
     origin_ru: "Усечение слова charisma.",
     definition_en: "REAL-DEFINITION-EN effortless charm.",
     definition_ru: "REAL-DEFINITION-RU природное обаяние.",
+    illustration_brief_en: "A magnetic glow radiating from a silhouette.",
     example_en: "unspoken rizz",
     example_note_en: "note en",
     example_note_ru: "note ru",

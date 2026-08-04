@@ -67,6 +67,21 @@ for definition_en/definition_ru AND both fakes, all six texts:
   reads like a real dictionary entry for a neighboring concept.
 - Same tone, same person, same level of jargon across all three options in each language.
 
+THE ILLUSTRATION BRIEF is a separate field, NOT part of the guessing game — it may
+describe the term's real meaning as directly and concretely as needed:
+- 1-2 sentences, 60-280 characters, in plain descriptive English (regardless of the
+  post's language elsewhere).
+- Ground it in specific, literally drawable objects, scenes or actions tied to THIS
+  term's actual meaning — not a generic "internet vibes" mood board. E.g. for "ratio":
+  "A single small social-media post visibly swamped by a flood of reply icons far
+  outnumbering its like icons, like a tiny boat overwhelmed by a wave." For "rizz":
+  "A magnetic glow radiating from one figure's silhouette while sparks and hearts
+  drift toward it from a crowd of onlookers." Be that specific and literal.
+- Describe it through objects, symbols, glows, UI-like shapes, or scenery — NOT human
+  figures or faces (illustrations must not depict people, so phrase actions through
+  objects/symbols standing in for them, e.g. "a spotlight" instead of "a confident person").
+- Never instruct that any text, letters, words or numbers appear in the image itself.
+
 Respond with STRICT JSON only (no prose, no code fences) matching exactly:
 {
   "term": string,              // canonical spelling
@@ -77,6 +92,7 @@ Respond with STRICT JSON only (no prose, no code fences) matching exactly:
   "origin_ru": string,
   "definition_en": string,     // 1-2 sentences, 120-220 chars, never contains the term
   "definition_ru": string,
+  "illustration_brief_en": string, // see THE ILLUSTRATION BRIEF above
   "example_en": string,        // ONE example sentence, as seen in the wild
   "example_note_en": string,   // plain-English explanation of the example
   "example_note_ru": string,   // Russian translation of the example + a note
@@ -96,20 +112,26 @@ Respond with STRICT JSON only (no prose, no code fences) matching exactly:
 /**
  * Flux prompt: hard-constrained to SFW, no text, no people, no logos.
  *
- * Deliberately does NOT include the term itself: flux-1-schnell loves to
- * render quoted words as typography, which is exactly the "no text" defect
- * we validate against. Humans are banned outright too — hands and faces are
- * the model's weakest anatomy at 6 steps, so the composition is steered
- * toward metaphorical object scenes instead.
+ * Takes the dedicated `illustration_brief_en` field, not the guessing-game
+ * definition: the definition is deliberately vague (readers must not be able
+ * to tell it from the fakes) and never restates the term, which starved Flux
+ * of anything concrete to draw and produced generic mood-board scenes with no
+ * real connection to the term. The brief is free to describe the term's
+ * actual meaning directly. It deliberately does NOT include the term itself
+ * as a quoted string: flux-1-schnell loves to render quoted words as
+ * typography, which is exactly the "no text" defect we validate against.
+ * Humans are banned outright too — hands and faces are the model's weakest
+ * anatomy at 6 steps, so the composition is steered toward object/symbol
+ * scenes instead (the brief-writing instructions already ask for this).
  */
-export function imagePrompt(definitionEn: string, attempt = 0): string {
+export function imagePrompt(illustrationBrief: string, attempt = 0): string {
   const retryPrefix = attempt > 0
     ? "IMPORTANT: the previous attempt broke the rules below; follow them exactly this time. "
     : "";
   return `${retryPrefix}Editorial concept illustration for an online dictionary ` +
-    `of internet slang. Visualize this idea through objects, symbols and ` +
-    `atmosphere only: ${definitionEn.slice(0, 200)}. ` +
-    `Ironic, witty, slightly surreal metaphorical still-life composition. ` +
+    `of internet slang. Depict this specific scene concretely: ` +
+    `${illustrationBrief.slice(0, 300)}. ` +
+    `Ironic, witty, slightly surreal editorial illustration style. ` +
     `Dark midnight navy background with violet glow and warm amber accents, ` +
     `glossy magazine feel. ` +
     `Hard rules: no humans, no faces, no hands, no body parts, no real people, ` +
@@ -119,12 +141,23 @@ export function imagePrompt(definitionEn: string, attempt = 0): string {
 }
 
 /**
- * Vision-model check of the generated illustration. Kept to two binary
- * questions LLaVA-7B answers reliably.
+ * Vision-model check of the generated illustration: the two anatomy/text
+ * defects LLaVA-7B answers reliably, plus a lenient relevance check against
+ * the illustration brief. "is_relevant" defaults to true on any loose or
+ * metaphorical connection — these are ironic surreal editorial illustrations,
+ * not literal photos, so a strict reading would reject good abstract art as
+ * often as it catches genuinely unrelated ones.
  */
-export const IMAGE_VALIDATION_PROMPT =
-  `Look at the image carefully. Respond with STRICT JSON only, no prose: ` +
-  `{"has_text": true/false, "has_humans": true/false}. ` +
-  `"has_text" is true if the image contains any readable letters, words, ` +
-  `numbers or typography. "has_humans" is true if any human figure, face, ` +
-  `hand or other body part is visible.`;
+export function imageValidationPrompt(illustrationBrief: string): string {
+  return `Look at the image carefully. Respond with STRICT JSON only, no prose: ` +
+    `{"has_text": true/false, "has_humans": true/false, "is_relevant": true/false}. ` +
+    `"has_text" is true if the image contains any readable letters, words, ` +
+    `numbers or typography. "has_humans" is true if any human figure, face, ` +
+    `hand or other body part is visible. "is_relevant" is true if the image ` +
+    `has ANY plausible thematic, symbolic or metaphorical connection — even a ` +
+    `loose or abstract one — to this concept: "${
+      illustrationBrief.slice(0, 250)
+    }". ` +
+    `Default "is_relevant" to true unless the image is clearly about something ` +
+    `completely unrelated.`;
+}
