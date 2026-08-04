@@ -40,27 +40,42 @@ export interface DailyPostInput {
   /** Display index of the real definition. */
   correctIndex: number;
   permalink: string;
-  imageUrl: string | null;
+  /**
+   * Whether an illustration exists for this term — only affects the message
+   * wording (the header moves into the photo's caption). The photo itself is
+   * sent separately as raw bytes, not built here — see `sendPhotoBytes`.
+   */
+  hasImage: boolean;
+}
+
+/**
+ * Caption used on the photo message when an illustration is sent — exported
+ * so postTermToTelegram can reuse it for the multipart upload.
+ */
+export function telegramHeader(
+  locale: Locale,
+  siteName: string,
+  dayNumber: number,
+  term: string,
+  ipa: string,
+  pos: string,
+): string {
+  const ui = t(locale);
+  return `📖 ${siteName} — ${ui.tickerDay} ${dayNumber}\n\n${term}\n${ipa} · ${pos}`;
 }
 
 /** Pure builder — exported for tests. */
 export function buildTelegramPosts(input: DailyPostInput): TelegramPost[] {
   const ui = t(input.locale);
   const posts: TelegramPost[] = [];
-  const header =
-    `📖 ${input.siteName} — ${ui.tickerDay} ${input.dayNumber}\n\n${input.term}\n` +
-    `${input.ipa} · ${input.pos}`;
-
-  if (input.imageUrl) {
-    posts.push({
-      method: "sendPhoto",
-      payload: {
-        chat_id: input.channelId,
-        photo: input.imageUrl,
-        caption: header,
-      },
-    });
-  }
+  const header = telegramHeader(
+    input.locale,
+    input.siteName,
+    input.dayNumber,
+    input.term,
+    input.ipa,
+    input.pos,
+  );
 
   const options = input.choices
     .map((text, i) => `${CHOICE_LABELS[i]}) ${text}`)
@@ -69,7 +84,7 @@ export function buildTelegramPosts(input: DailyPostInput): TelegramPost[] {
     method: "sendMessage",
     payload: {
       chat_id: input.channelId,
-      text: `${input.imageUrl ? input.term : header}\n\n` +
+      text: `${input.hasImage ? input.term : header}\n\n` +
         `${ui.tgIntro}\n\n${options}\n\n` +
         `${ui.tgVote}\n${input.permalink}`,
       link_preview_options: { is_disabled: true },
@@ -96,6 +111,13 @@ export function buildTelegramPosts(input: DailyPostInput): TelegramPost[] {
  * Post a published term to the channel. Shared by the daily pipeline and the
  * admin "post to Telegram" button. Throws if the secrets are missing —
  * callers decide whether that is fatal.
+ *
+ * The photo is uploaded as raw bytes straight from R2 (multipart), not as a
+ * URL for Telegram to fetch: Telegram's own fetcher reaching our domain
+ * turned out to be flaky (edge/WAF-dependent — a plain curl to the same URL
+ * succeeds every time from outside, yet `sendPhoto` with a `photo` URL
+ * failed daily with "failed to get HTTP URL content" after the domain move).
+ * Uploading bytes directly removes that whole class of failure.
  */
 export async function postTermToTelegram(
   env: Env,
@@ -119,6 +141,32 @@ export async function postTermToTelegram(
     : row.ipa;
   // Same shuffle as the site: display order derives from HMAC(slug).
   const order = await choiceOrder(row.slug, env.COOKIE_HMAC_SECRET);
+
+  let photoResult: string | null = null;
+  if (row.image_key) {
+    const obj = await env.IMAGES.get(row.image_key);
+    if (obj) {
+      const bytes = new Uint8Array(await obj.arrayBuffer());
+      const caption = telegramHeader(
+        locale,
+        SITE_NAME,
+        dayNumber,
+        row.term,
+        ipa,
+        row.pos,
+      );
+      photoResult = await sendPhotoBytes(
+        env.TELEGRAM_BOT_TOKEN,
+        env.TELEGRAM_CHANNEL_ID,
+        bytes,
+        `${row.slug}.png`,
+        caption,
+      );
+    } else {
+      photoResult = `skipped: R2 object "${row.image_key}" not found`;
+    }
+  }
+
   const posts = buildTelegramPosts({
     channelId: env.TELEGRAM_CHANNEL_ID,
     siteName: SITE_NAME,
@@ -130,9 +178,38 @@ export async function postTermToTelegram(
     choices: [defs[order[0]], defs[order[1]], defs[order[2]]],
     correctIndex: order.indexOf(0),
     permalink: `${CANONICAL_ORIGIN}${localePath(locale, `/term/${row.slug}`)}`,
-    imageUrl: row.image_key ? `${CANONICAL_ORIGIN}/img/${row.image_key}` : null,
+    hasImage: photoResult !== null,
   });
-  return await sendTelegramPosts(env.TELEGRAM_BOT_TOKEN, posts);
+  const rest = await sendTelegramPosts(env.TELEGRAM_BOT_TOKEN, posts);
+  return photoResult ? `sendPhoto: ${photoResult}; ${rest}` : rest;
+}
+
+/**
+ * Upload a photo directly (multipart/form-data) instead of asking Telegram
+ * to fetch a URL — see postTermToTelegram for why. Returns "200" or
+ * "status + error body" for logging, matching tgCall's convention.
+ */
+export async function sendPhotoBytes(
+  botToken: string,
+  chatId: string,
+  bytes: Uint8Array,
+  filename: string,
+  caption: string,
+): Promise<string> {
+  const form = new FormData();
+  form.set("chat_id", chatId);
+  form.set("caption", caption);
+  form.set(
+    "photo",
+    new Blob([bytes as BlobPart], { type: "image/png" }),
+    filename,
+  );
+  const res = await fetch(
+    `https://api.telegram.org/bot${botToken}/sendPhoto`,
+    { method: "POST", body: form },
+  );
+  if (res.ok) return String(res.status);
+  return `${res.status} ${(await res.text()).slice(0, 120)}`;
 }
 
 /** Single Bot API call; returns "200" or "status + error body" for logging. */
