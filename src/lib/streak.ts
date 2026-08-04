@@ -15,6 +15,9 @@ const EMOJI: Record<DayResult, string> = {
   r: "\u{1F7E5}",
 };
 
+/** Day with no recorded result. */
+const MISSING = "\u{2B1C}";
+
 /** Monday of the week containing `date` (UTC). */
 export function weekStart(date: string): string {
   const d = new Date(`${date}T00:00:00Z`);
@@ -23,7 +26,7 @@ export function weekStart(date: string): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Emoji grid for Monday..`today`; days without a result are skipped. */
+/** Emoji grid for Monday..`today`; unplayed days render as MISSING. */
 export function weekGrid(results: ResultsMap, today: string): string {
   const start = new Date(`${weekStart(today)}T00:00:00Z`);
   const end = new Date(`${today}T00:00:00Z`);
@@ -31,9 +34,22 @@ export function weekGrid(results: ResultsMap, today: string): string {
   for (const d = start; d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
     const key = d.toISOString().slice(0, 10);
     const r = results[key];
-    if (r) grid += EMOJI[r];
+    grid += r ? EMOJI[r] : MISSING;
   }
   return grid;
+}
+
+/** True if at least one day Monday..`today` has a recorded result. */
+export function hasResultsThisWeek(
+  results: ResultsMap,
+  today: string,
+): boolean {
+  const start = new Date(`${weekStart(today)}T00:00:00Z`);
+  const end = new Date(`${today}T00:00:00Z`);
+  for (const d = start; d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+    if (results[d.toISOString().slice(0, 10)]) return true;
+  }
+  return false;
 }
 
 /** Full share string, e.g. `slangbot day 142 — my week: 🟩🟩🟥 slangbot.maksimyugai.com`. */
@@ -44,7 +60,7 @@ export function shareString(
   today: string,
   host: string,
 ): string {
-  const grid = weekGrid(results, today) || "\u{1F7E5}";
+  const grid = weekGrid(results, today);
   return `${siteName} day ${dayNumber} — my week: ${grid} ${host}`;
 }
 
