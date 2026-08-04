@@ -22,7 +22,9 @@ import {
   buildSuggestionNotice,
   buildTelegramPosts,
   parseSuggestionCallback,
+  sendPhotoBytes,
   suggestionCallbackData,
+  telegramHeader,
 } from "../src/pipeline/telegram.ts";
 import { imagePrompt } from "../src/ai/prompts.ts";
 import {
@@ -284,26 +286,24 @@ const TG_INPUT = {
   choices: ["REAL definition", "FAKE one", "FAKE two"] as const,
   correctIndex: 0,
   permalink: "https://slangbot.maksimyugai.com/term/bussin",
-  imageUrl: "https://slangbot.maksimyugai.com/img/terms/bussin.png",
+  hasImage: true,
 };
 
-Deno.test("telegram posts: photo + labeled options + quiz poll", () => {
+Deno.test("telegram posts: message + quiz poll (photo is sent separately as bytes)", () => {
   const posts = buildTelegramPosts(TG_INPUT);
-  assertEquals(posts.map((p) => p.method), [
-    "sendPhoto",
-    "sendMessage",
-    "sendPoll",
-  ]);
+  assertEquals(posts.map((p) => p.method), ["sendMessage", "sendPoll"]);
 
-  const message = posts[1].payload.text as string;
+  const message = posts[0].payload.text as string;
   assert(message.includes("A) REAL definition"));
   assert(message.includes("B) FAKE one"));
   assert(message.includes("C) FAKE two"));
   assert(message.includes(TG_INPUT.permalink));
   // The message itself must not reveal which option is real.
   assert(!message.toLowerCase().includes("correct"));
+  // With an image, the header (term/ipa/pos) lives in the photo caption, not here.
+  assert(!message.includes(TG_INPUT.ipa));
 
-  const poll = posts[2].payload;
+  const poll = posts[1].payload;
   assertEquals(poll.type, "quiz");
   assertEquals(poll.options, ["A", "B", "C"]);
   assertEquals(poll.correct_option_id, 0);
@@ -312,23 +312,91 @@ Deno.test("telegram posts: photo + labeled options + quiz poll", () => {
   assert((poll.explanation as string).length <= 200);
 });
 
-Deno.test("telegram posts: no photo message when the image is missing", () => {
-  const posts = buildTelegramPosts({ ...TG_INPUT, imageUrl: null });
+Deno.test("telegram posts: header moves into the message when there is no image", () => {
+  const posts = buildTelegramPosts({ ...TG_INPUT, hasImage: false });
   assertEquals(posts.map((p) => p.method), ["sendMessage", "sendPoll"]);
-  // Without the photo, the header (term/ipa/pos) moves into the message.
   assert((posts[0].payload.text as string).includes("/ˈbʌsɪn/"));
 });
 
 Deno.test("telegram posts: ru locale localizes the scaffolding", () => {
   const posts = buildTelegramPosts({ ...TG_INPUT, locale: "ru" });
-  const caption = posts[0].payload.caption as string;
-  assert(caption.includes("день 7"));
-  const message = posts[1].payload.text as string;
+  const message = posts[0].payload.text as string;
   assert(message.includes("одно из этих определений настоящее"));
   assert(message.includes("голосуйте ниже"));
-  const poll = posts[2].payload;
+  const poll = posts[1].payload;
   assertEquals(poll.question, "bussin — какое определение настоящее?");
   assert((poll.explanation as string).startsWith("полный разбор →"));
+});
+
+Deno.test("telegramHeader: day number and ru locale", () => {
+  const header = telegramHeader(
+    "ru",
+    "slangbot",
+    7,
+    "bussin",
+    "/ˈbʌsɪn/",
+    "adj.",
+  );
+  assert(header.includes("день 7"));
+  assert(header.includes("bussin"));
+});
+
+Deno.test("sendPhotoBytes: uploads a multipart photo, not a URL", async () => {
+  const realFetch = globalThis.fetch;
+  let capturedUrl = "";
+  let capturedBody: unknown;
+  globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+    capturedUrl = String(input instanceof Request ? input.url : input);
+    capturedBody = init?.body;
+    return Promise.resolve(new Response('{"ok":true}', { status: 200 }));
+  }) as typeof fetch;
+
+  try {
+    const result = await sendPhotoBytes(
+      "tok",
+      "@daily_slangbot",
+      new Uint8Array([1, 2, 3]),
+      "bussin.png",
+      "caption text",
+    );
+    assertEquals(result, "200");
+    assert(capturedUrl.endsWith("/bottok/sendPhoto"));
+    assert(
+      capturedBody instanceof FormData,
+      "body must be multipart form data",
+    );
+    const form = capturedBody as FormData;
+    const photo = form.get("photo");
+    assert(
+      photo instanceof Blob,
+      "photo field must be raw bytes, not a URL string",
+    );
+    assertEquals(form.get("chat_id"), "@daily_slangbot");
+    assertEquals(form.get("caption"), "caption text");
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+Deno.test("sendPhotoBytes: surfaces the Telegram error on failure", async () => {
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (() =>
+    Promise.resolve(
+      new Response('{"ok":false,"description":"bad"}', { status: 400 }),
+    )) as typeof fetch;
+  try {
+    const result = await sendPhotoBytes(
+      "tok",
+      "@daily_slangbot",
+      new Uint8Array([1]),
+      "x.png",
+      "cap",
+    );
+    assert(result.startsWith("400"));
+    assert(result.includes("bad"));
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 });
 
 // --- suggestion moderation callbacks ---
