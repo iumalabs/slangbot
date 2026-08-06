@@ -10,3 +10,6 @@ assets/client.js.map
 # bundler to resolve npm specifiers — never committed)
 deno.lock
 node_modules/
+
+# deno task test:coverage / check:coverage
+cov_profile/

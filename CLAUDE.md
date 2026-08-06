@@ -44,7 +44,14 @@ escape hatches.
 ## Quality gate
 
 `deno task hooks:install` once after cloning — the pre-commit hook runs the same
-gate as CI (fmt check, lint, typecheck, AI isolation, tests).
+gate as CI (fmt check, lint, typecheck, AI isolation, tests, route/e2e
+coverage).
+
+**Route/e2e coverage:** every handler in `src/routes/` must be exercised by the
+route-level tests in `test/*.ts` (`deno task check:coverage`, backed by
+`scripts/check-route-coverage.ts`). Genuinely unreachable branches under
+`deno test` (see the script's `EXCEPTIONS`) need a justified entry there, not a
+silently skipped test.
 
 **Cost guarantee:** Workers AI is called only from `src/pipeline/` and `src/ai/`
 — enforced by `deno task check:ai` and CI. Never call a model from a user-facing

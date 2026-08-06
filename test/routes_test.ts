@@ -4,7 +4,7 @@
  */
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { api } from "../src/routes/api.ts";
-import { pages } from "../src/routes/pages.tsx";
+import { pages, render404 } from "../src/routes/pages.tsx";
 import { correctIndex } from "../src/lib/game.ts";
 import {
   FakeD1,
@@ -106,6 +106,20 @@ Deno.test("guess: unknown slug is 404, malformed input is 400", async () => {
   assertEquals(bad.status, 400);
 });
 
+Deno.test("guess: unparseable JSON body is 400", async () => {
+  const { env } = setup();
+  const res = await api.request(
+    new Request("http://localhost/api/guess", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "not json",
+    }),
+    {},
+    env,
+  );
+  assertEquals(res.status, 400);
+});
+
 Deno.test("guess: reveal (-1) returns the entry without counting", async () => {
   const { db, env } = setup();
   const res = await api.request(
@@ -144,6 +158,15 @@ Deno.test("game-mode SSR never leaks which choice is correct", async () => {
   );
 });
 
+Deno.test("home page: shows a placeholder before the first entry is published", async () => {
+  const db = new FakeD1(); // no terms seeded
+  const kv = new FakeKV();
+  const env = makeEnv(db, kv);
+  const res = await pages.request("http://localhost/", {}, env);
+  assertEquals(res.status, 200);
+  assert(!(await res.text()).includes('data-island="GuessGame"'));
+});
+
 Deno.test("RU home page renders Russian choices at /ru/", async () => {
   const { env } = setup();
   const res = await pages.request("http://localhost/ru/", {}, env);
@@ -162,6 +185,72 @@ Deno.test("term permalink reveals the full entry", async () => {
   assertStringIncludes(html, "unspoken rizz");
   const missing = await pages.request("http://localhost/term/nope", {}, env);
   assertEquals(missing.status, 404);
+});
+
+Deno.test("RU term permalink reveals the full entry in Russian", async () => {
+  const { env } = setup();
+  const res = await pages.request("http://localhost/ru/term/rizz", {}, env);
+  assertEquals(res.status, 200);
+  const html = await res.text();
+  assertStringIncludes(html, "REAL-DEFINITION-RU");
+  assertStringIncludes(html, 'lang="ru"');
+  const missing = await pages.request(
+    "http://localhost/ru/term/nope",
+    {},
+    env,
+  );
+  assertEquals(missing.status, 404);
+});
+
+Deno.test("GET /ru redirects to /ru/", async () => {
+  const { env } = setup();
+  const res = await pages.request(
+    new Request("http://localhost/ru", { redirect: "manual" }),
+    {},
+    env,
+  );
+  assertEquals(res.status, 301);
+  assertEquals(res.headers.get("location"), "/ru/");
+});
+
+Deno.test("archive: lists terms and supports search", async () => {
+  const { env } = setup();
+  const all = await pages.request("http://localhost/archive", {}, env);
+  assertEquals(all.status, 200);
+  assertStringIncludes(await all.text(), "rizz");
+
+  const hit = await pages.request(
+    "http://localhost/archive?q=rizz",
+    {},
+    env,
+  );
+  assertEquals(hit.status, 200);
+  assertStringIncludes(await hit.text(), "rizz");
+
+  const miss = await pages.request(
+    "http://localhost/archive?q=zzzznotaterm",
+    {},
+    env,
+  );
+  assertEquals(miss.status, 200);
+  assert(!(await miss.text()).includes(">rizz<"));
+});
+
+Deno.test("RU archive: lists terms in Russian", async () => {
+  const { env } = setup();
+  const res = await pages.request("http://localhost/ru/archive", {}, env);
+  assertEquals(res.status, 200);
+  assertStringIncludes(await res.text(), 'lang="ru"');
+});
+
+Deno.test("render404: renders a localized 404 page", async () => {
+  const en = await render404("en", "/nope");
+  assertEquals(en.status, 404);
+  assertStringIncludes(await en.text(), "404");
+
+  const ru = await render404("ru", "/ru/nope");
+  assertEquals(ru.status, 404);
+  assertStringIncludes(await ru.text(), 'lang="ru"');
 });
 
 Deno.test("suggest: rate limit allows 3 per day then 429", async () => {
@@ -222,6 +311,140 @@ Deno.test("suggest: overlong terms are truncated to 40 chars", async () => {
     );
     assertEquals(res.status, 200);
     assertEquals(db.suggestions[0].term.length, 40);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+Deno.test("suggest: unparseable JSON body is 400", async () => {
+  const { env } = setup();
+  const res = await api.request(
+    new Request("http://localhost/api/suggest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "not json",
+    }),
+    {},
+    env,
+  );
+  assertEquals(res.status, 400);
+});
+
+Deno.test("suggest: failed Turnstile verification is 403", async () => {
+  const { db, env } = setup();
+  const realFetch = globalThis.fetch;
+  globalThis.fetch =
+    (() => Promise.resolve(Response.json({ success: false }))) as typeof fetch;
+  try {
+    const res = await api.request(
+      new Request("http://localhost/api/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ term: "skibidi", turnstileToken: "tok" }),
+      }),
+      {},
+      env,
+    );
+    assertEquals(res.status, 403);
+    assertEquals(db.suggestions.length, 0);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+Deno.test("suggest: no-JS form POST redirects back to the referring page", async () => {
+  const { db, env } = setup();
+  const realFetch = globalThis.fetch;
+  globalThis.fetch =
+    (() => Promise.resolve(Response.json({ success: true }))) as typeof fetch;
+  try {
+    const form = new URLSearchParams({
+      term: "skibidi",
+      "cf-turnstile-response": "tok",
+    });
+    const res = await api.request(
+      new Request("http://localhost/api/suggest", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Referer": "http://localhost/",
+        },
+        body: form.toString(),
+        redirect: "manual",
+      }),
+      {},
+      env,
+    );
+    assertEquals(res.status, 303);
+    assertEquals(res.headers.get("location"), "http://localhost/");
+    assertEquals(db.suggestions[0].term, "skibidi");
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+Deno.test("telegram webhook: unparseable JSON body is 400", async () => {
+  const { env } = setup();
+  const envWithHook = { ...env, TELEGRAM_WEBHOOK_SECRET: "hook-secret" };
+  const res = await api.request(
+    new Request("http://localhost/api/telegram/webhook", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Bot-Api-Secret-Token": "hook-secret",
+      },
+      body: "not json",
+    }),
+    {},
+    envWithHook,
+  );
+  assertEquals(res.status, 400);
+});
+
+Deno.test("telegram webhook: with a bot token configured, acks and edits the source message", async () => {
+  const { db, env } = setup();
+  db.suggestions.push({
+    id: 2,
+    term: "rizzler",
+    status: "new",
+    created_at: "now",
+  });
+  const envWithBot = {
+    ...env,
+    TELEGRAM_WEBHOOK_SECRET: "hook-secret",
+    TELEGRAM_BOT_TOKEN: "bot-token",
+  };
+  const calls: string[] = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = ((input: RequestInfo | URL) => {
+    const url = new URL(String(input instanceof Request ? input.url : input));
+    calls.push(url.pathname);
+    return Promise.resolve(Response.json({ ok: true }));
+  }) as typeof fetch;
+
+  try {
+    const res = await api.request(
+      new Request("http://localhost/api/telegram/webhook", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Telegram-Bot-Api-Secret-Token": "hook-secret",
+        },
+        body: JSON.stringify({
+          callback_query: {
+            id: "cb2",
+            data: "sug:approve:2",
+            message: { chat: { id: 1 }, message_id: 5, text: "rizzler?" },
+          },
+        }),
+      }),
+      {},
+      envWithBot,
+    );
+    assertEquals(res.status, 200);
+    assertEquals(db.suggestions[0].status, "approved");
+    assert(calls.some((p) => p.includes("answerCallbackQuery")));
+    assert(calls.some((p) => p.includes("editMessageText")));
   } finally {
     globalThis.fetch = realFetch;
   }
