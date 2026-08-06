@@ -120,7 +120,7 @@ One-time setup in the dashboard (Workers & Pages → iuma → Settings → Build
 
 | Field             | Value                                |
 | ----------------- | ------------------------------------ |
-| Git repository    | `maksimyugai/iumadev`                |
+| Git repository    | `maksimyugai/slangbot`               |
 | Production branch | `main`                               |
 | Build command     | `npx -y deno task build`             |
 | Deploy command    | `npx -y deno task deploy:production` |

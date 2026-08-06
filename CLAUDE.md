@@ -50,8 +50,8 @@ request path.
 ## Naming
 
 "slangbot" is the product name (`SITE_NAME` in `src/config.ts`); the live domain
-is `slangbot.maksimyugai.com` (`CANONICAL_ORIGIN`). "iuma" survives only as the
-internal Cloudflare resource name (Worker name, D1/KV/R2, AI Gateway) — those
-were never renamed since renaming means recreating the resources; don't read
-anything into it. Telegram: `@slangbotapp` is the channel, `@daily_slangbot` is
-the bot — don't mix them up.
+is `slangbot.maksimyugai.com` (`CANONICAL_ORIGIN`); the GitHub repository is
+`maksimyugai/slangbot`. "iuma" survives only as the internal Cloudflare resource
+name (Worker name, D1/KV/R2, AI Gateway) — those were never renamed since
+renaming means recreating the resources; don't read anything into it. Telegram:
+`@slangbotapp` is the channel, `@daily_slangbot` is the bot — don't mix them up.
