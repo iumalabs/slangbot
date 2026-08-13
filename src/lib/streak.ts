@@ -52,7 +52,7 @@ export function hasResultsThisWeek(
   return false;
 }
 
-/** Full share string, e.g. `slangbot day 142 — my week: 🟩🟩🟥 slangbot.maksimyugai.com`. */
+/** Full share string, e.g. `slangbot day 142 — my week: 🟩🟩🟥 slangbot.iuma.dev`. */
 export function shareString(
   siteName: string,
   dayNumber: number,

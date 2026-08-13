@@ -96,9 +96,9 @@ Deno.test("shareString matches the documented format", () => {
       142,
       results,
       "2026-07-07",
-      "slangbot.maksimyugai.com",
+      "slangbot.iuma.dev",
     ),
-    "slangbot day 142 — my week: 🟩🟥 slangbot.maksimyugai.com",
+    "slangbot day 142 — my week: 🟩🟥 slangbot.iuma.dev",
   );
 });
 
@@ -321,7 +321,7 @@ const TG_INPUT = {
   pos: "adj., internet",
   choices: ["REAL definition", "FAKE one", "FAKE two"] as const,
   correctIndex: 0,
-  permalink: "https://slangbot.maksimyugai.com/term/bussin",
+  permalink: "https://slangbot.iuma.dev/term/bussin",
   hasImage: true,
 };
 
