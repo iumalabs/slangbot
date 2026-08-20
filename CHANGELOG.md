@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/iumalabs/slangbot/compare/slangbot-v1.1.0...slangbot-v1.2.0) (2026-08-20)
+
+
+### Features
+
+* show app version in the footer ([f24350b](https://github.com/iumalabs/slangbot/commit/f24350b80a2261641fc142365caa4bd4622eeae4))
+* show app version in the footer ([c2ae8a4](https://github.com/iumalabs/slangbot/commit/c2ae8a45cc45ec890b9884ac4867918c7e0be3da))
+
 ## [1.1.0](https://github.com/iumalabs/slangbot/compare/slangbot-v1.0.0...slangbot-v1.1.0) (2026-08-20)
 
 
