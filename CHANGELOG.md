@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/iumalabs/slangbot/compare/v1.2.0...v1.2.1) (2026-08-20)
+
+
+### Bug Fixes
+
+* isolate fork PR runs from the shared self-hosted runner ([bb2ad76](https://github.com/iumalabs/slangbot/commit/bb2ad76196cc73ac7d4ca12ace50550f7ada7a93))
+
 ## [1.2.0](https://github.com/iumalabs/slangbot/compare/slangbot-v1.1.0...slangbot-v1.2.0) (2026-08-20)
 
 
