@@ -1,5 +1,5 @@
 # slangbot — autonomous slang-of-the-day dictionary.
-# Production domain: slangbot.maksimyugai.com (see the [[routes]] block below).
+# Production domain: slangbot.iuma.dev (see the [[routes]] block below).
 
 name = "slangbot"
 main = "src/index.tsx"
@@ -15,7 +15,7 @@ workers_dev = false
 preview_urls = true
 
 [[routes]]
-pattern = "slangbot.maksimyugai.com"
+pattern = "slangbot.iuma.dev"
 custom_domain = true
 
 [assets]
