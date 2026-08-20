@@ -5,6 +5,11 @@
 #   static, test, build, CodeQL.
 # Secret scanning (gitleaks) runs locally only, via the pre-commit hook — the
 # gitleaks-action GitHub App is a paid add-on for orgs, so it's not in CI.
+#
+# runs-on falls back to a GitHub-hosted runner for pull_request runs from a
+# fork (this repo is public): the self-hosted general-tier runner has
+# passwordless sudo and is shared with other repos, so a fork PR's code must
+# never execute there. Same-repo pushes/PRs still use it as normal.
 name: CI
 
 on:
@@ -19,7 +24,7 @@ permissions:
 jobs:
   # Formatting, lint rules, and full typecheck.
   static:
-    runs-on: [self-hosted, general]
+    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-latest' || fromJSON('["self-hosted", "general"]') }}
     steps:
       - uses: actions/checkout@v4
 
@@ -37,7 +42,7 @@ jobs:
         run: deno task check
 
   test:
-    runs-on: [self-hosted, general]
+    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-latest' || fromJSON('["self-hosted", "general"]') }}
     steps:
       - uses: actions/checkout@v4
 
@@ -54,7 +59,7 @@ jobs:
   # Client bundle builds, stays within the 60 KB gzip budget, and no
   # Workers AI call leaks onto a user-facing request path.
   build:
-    runs-on: [self-hosted, general]
+    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-latest' || fromJSON('["self-hosted", "general"]') }}
     steps:
       - uses: actions/checkout@v4
 
