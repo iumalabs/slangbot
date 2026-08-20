@@ -29,7 +29,10 @@ assumption "it'll sort itself out in the merge UI."
 **Never remove git branches** — local or remote, merged or not. Once a branch is
 pushed, it stays.
 
-Commits: English messages, no Anthropic co-author trailer.
+Commits: English messages, no Anthropic co-author trailer, Conventional Commits
+prefix (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `perf:`, `test:`, …) —
+release-please reads these to compute the next semver bump, see README →
+"Releases".
 
 ## Deploys
 

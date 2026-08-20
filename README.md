@@ -315,6 +315,30 @@ path here on purpose — a `Require: Warp` policy has no way to pass for a cloud
 CI runner, so unattended automation isn't compatible with this policy shape; the
 admin panel is the intended trigger surface.
 
+## Releases
+
+Semver releases are automated by
+[release-please](https://github.com/googleapis/release-please)
+(`.github/workflows/release-please.yml`), Google's Conventional-Commits-driven
+release tool. It does **not** deploy anything — deploys are Workers Builds' job
+(see "Deploys" above) and already happen on every push to `main` regardless of
+releases; release-please only maintains version history.
+
+- Every commit message needs a
+  [Conventional Commits](https://www.conventionalcommits.org/) prefix (`feat:`,
+  `fix:`, `chore:`, `docs:`, `refactor:`, `perf:`, `test:`, …) — release-please
+  reads these to decide the next version bump (`feat:` → minor, `fix:`/`perf:` →
+  patch, `feat!:`/a `BREAKING CHANGE:` footer → major).
+- On every push to `main`, release-please keeps a single up-to-date "release PR"
+  open with the accumulated `CHANGELOG.md` entry and the next version in
+  `.release-please-manifest.json`.
+- Merging that PR tags the release directly on `main` — plain `vX.Y.Z`, no
+  prerelease/build suffixes — and publishes a GitHub Release. `main` is the only
+  release branch; there's no separate `release/*` branch to keep in sync.
+- Config lives in `release-please-config.json` (`release-type: simple`, since
+  this is a Deno project with no `package.json` to bump); the current version is
+  whatever `.release-please-manifest.json` says.
+
 ## Cost model (Workers AI free tier: 10,000 neurons/day)
 
 **The core guarantee: user traffic never triggers an AI call.** Model calls

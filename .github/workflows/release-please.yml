@@ -1,0 +1,21 @@
+# Semantic-versioned releases via Conventional Commits, driven by Google's
+# release-please. On every push to main it keeps an up-to-date "release PR"
+# with the next version bump + CHANGELOG entry; merging that PR tags the
+# release (vX.Y.Z, no suffixes) and publishes a GitHub Release.
+name: release-please
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: [self-hosted, general]
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          target-branch: main
