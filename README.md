@@ -37,8 +37,15 @@ specifiers; no `package.json`, no npm/node/npx).
 **Pre-commit hook**: run `deno task hooks:install` once after cloning — it
 points `core.hooksPath` at the committed `.githooks/` directory, so every
 `git commit` runs the same gate as CI (fmt check, lint, typecheck, AI isolation,
-tests) before the commit is created. Bypass in an emergency with
-`git commit --no-verify`.
+tests) plus a secret scan before the commit is created. Bypass in an emergency
+with `git commit --no-verify`.
+
+**Secret scanning (gitleaks) is local-only, not in CI**: the `gitleaks-action`
+GitHub App requires a paid plan for organizations, so instead the pre-commit
+hook runs `gitleaks protect --staged` on every commit — install the CLI once
+with `go install github.com/zricethezav/gitleaks/v8@latest` or
+`brew install gitleaks`. A known non-secret (the public Access `AUD` tag in
+`wrangler.toml`) is suppressed with an inline `# gitleaks:allow` comment.
 
 The intended way to deploy is the Cloudflare Workers ↔ GitHub integration (see
 "Deploys" below), which calls `deploy:preview` / `deploy:production` for you on
@@ -112,8 +119,9 @@ Nothing deploys from a laptop:
 - push to **any other branch** → Workers Builds uploads a _version_ and posts
   its preview URL (`https://<version>-iuma.<account>.workers.dev`) on the
   commit/PR — production stays untouched;
-- GitHub Actions (`ci.yml`, CodeQL, gitleaks) remain the PR quality gates; they
-  do not deploy anything.
+- GitHub Actions (`ci.yml`, CodeQL) remain the PR quality gates; they do not
+  deploy anything. Secret scanning (gitleaks) runs locally only, via the
+  pre-commit hook — see "Commands" above.
 
 One-time setup in the dashboard (Workers & Pages → iuma → Settings → Build →
 **Connect** a Git repository), then fill the build configuration in:

@@ -5,6 +5,14 @@
 
 set -e
 
+echo "pre-commit: secret scan"
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "gitleaks not found. Install it (e.g. 'go install github.com/zricethezav/gitleaks/v8@latest'" >&2
+  echo "or 'brew install gitleaks') — secret scanning runs locally only, there is no CI backstop." >&2
+  exit 1
+fi
+gitleaks protect --staged --no-banner -v
+
 echo "pre-commit: format check"
 deno fmt --check
 

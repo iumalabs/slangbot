@@ -2,7 +2,9 @@
 #
 # Recommended branch protection for `main` (GitHub → Settings → Branches):
 # require a PR before merging with these checks required:
-#   static, test, build, CodeQL, gitleaks.
+#   static, test, build, CodeQL.
+# Secret scanning (gitleaks) runs locally only, via the pre-commit hook — the
+# gitleaks-action GitHub App is a paid add-on for orgs, so it's not in CI.
 name: CI
 
 on:
