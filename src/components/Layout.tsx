@@ -1,5 +1,10 @@
 import type { ReactNode } from "react";
-import { CANONICAL_ORIGIN, SITE_NAME, TAGLINE } from "../config.ts";
+import {
+  APP_VERSION,
+  CANONICAL_ORIGIN,
+  SITE_NAME,
+  TAGLINE,
+} from "../config.ts";
 import {
   alternatePath,
   formatDate,
@@ -167,7 +172,7 @@ export function Layout(props: LayoutProps) {
             </a>
           </p>
           <p className="footer-copyright">
-            © {new Date().getUTCFullYear()} {SITE_NAME}
+            © {new Date().getUTCFullYear()} {SITE_NAME} · v{APP_VERSION}
           </p>
         </footer>
         <script type="module" src="/client.js"></script>

@@ -1,3 +1,5 @@
+import manifest from "../.release-please-manifest.json" with { type: "json" };
+
 /**
  * Owner-editable brand constants.
  * SITE_NAME is the product name (shown in the wordmark, titles, share
@@ -6,6 +8,9 @@
  */
 export const SITE_NAME = "slangbot";
 export const TAGLINE = "the Internet's Unofficial Manual of Argot";
+
+/** Released version, kept in sync by release-please on every release. */
+export const APP_VERSION: string = (manifest as Record<string, string>)["."];
 
 /** Canonical origin for permalinks, OG tags, RSS and the sitemap. Always https. */
 export const CANONICAL_ORIGIN = "https://slangbot.iuma.dev";
