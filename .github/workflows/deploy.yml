@@ -1,14 +1,18 @@
-# Manual production deploy gate.
+# Production deploy gate, tied to releases.
 #
 # Workers Builds still auto-builds every push to main, but its production
 # deploy command only uploads a version (`wrangler versions upload`) instead
 # of promoting it — pushing to main no longer puts anything live on its own.
-# Going live is this workflow: run it by hand (Actions tab or `gh workflow
-# run deploy.yml`) after merging the release-please release PR, so a human
-# decides exactly when a release actually ships.
+# Going live is this workflow, triggered automatically when release-please
+# publishes a GitHub Release (i.e. right after a human merges the release
+# PR) — merging that PR is itself the deliberate decision to ship, so there's
+# no separate manual button in the normal path. workflow_dispatch stays as an
+# escape hatch to retry a failed deploy without cutting a new release.
 name: Deploy to production
 
 on:
+  release:
+    types: [published]
   workflow_dispatch:
 
 concurrency:
