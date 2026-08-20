@@ -1,0 +1,38 @@
+# Manual production deploy gate.
+#
+# Workers Builds still auto-builds every push to main, but its production
+# deploy command only uploads a version (`wrangler versions upload`) instead
+# of promoting it — pushing to main no longer puts anything live on its own.
+# Going live is this workflow: run it by hand (Actions tab or `gh workflow
+# run deploy.yml`) after merging the release-please release PR, so a human
+# decides exactly when a release actually ships.
+name: Deploy to production
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@61fe2df320078202e33d7d5ad347e7dcfa0e8f31 # v1.1.2
+        with:
+          deno-version: v2.x
+
+      - name: Build and deploy to production
+        run: deno task build && deno task deploy:production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 8b655d0dde6d223b9ce11116a014973a

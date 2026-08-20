@@ -49,8 +49,9 @@ with `go install github.com/zricethezav/gitleaks/v8@latest` or
 `wrangler.toml`) is suppressed with an inline `# gitleaks:allow` comment.
 
 The intended way to deploy is the Cloudflare Workers ↔ GitHub integration (see
-"Deploys" below), which calls `deploy:preview` / `deploy:production` for you on
-every push — running them locally is possible but not the default workflow.
+"Deploys" below); running `deploy:preview` / `deploy:production` locally is
+possible but not the default workflow. Production only ships via the manual
+"Deploy to production" GitHub Actions workflow — see "Deploys".
 
 Note: `deno install` (run automatically by `dev`/`build`) materializes a
 gitignored `node_modules` from the `deno.json` import map — wrangler's bundler
@@ -109,16 +110,22 @@ needs it to resolve `react`/`hono`/`workers-og`. It is not npm and there is no
    ever repoint the app at a different domain, this is the only place to change
    it (plus the Turnstile/Access dashboard settings below, which aren't code).
 
-## Deploys (Cloudflare Workers ↔ GitHub integration)
+## Deploys (Cloudflare Workers ↔ GitHub integration + a manual gate)
 
-All deploys run through **Workers Builds** — Cloudflare's own Git integration.
-Nothing deploys from a laptop:
+Builds run through **Workers Builds** — Cloudflare's own Git integration.
+Nothing builds from a laptop, but going live to production is a deliberate,
+manual step, not something every push to `main` does on its own:
 
-- push to **`main`** → Workers Builds builds and deploys to production
-  (slangbot.iuma.dev);
-- push to **any other branch** → Workers Builds uploads a _version_ and posts
-  its preview URL (`https://<version>-iuma.<account>.workers.dev`) on the
-  commit/PR — production stays untouched;
+- push to **`main`** → Workers Builds builds and uploads a new _version_ (does
+  **not** activate it — production traffic is untouched);
+- push to **any other branch** → same thing, plus a preview URL
+  (`https://<version>-iuma.<account>.workers.dev`) posted on the commit/PR;
+- going live is the **"Deploy to production"** GitHub Actions workflow
+  (`.github/workflows/deploy.yml`, `workflow_dispatch` only) — run it by hand
+  (Actions tab, or `gh workflow run deploy.yml`) after merging the
+  release-please release PR, once you've decided this is the moment to ship. It
+  rebuilds from the current `main` and runs `deploy:production` (applies D1
+  migrations, then `wrangler deploy`).
 - GitHub Actions (`ci.yml`, CodeQL) remain the PR quality gates; they do not
   deploy anything. Secret scanning (gitleaks) runs locally only, via the
   pre-commit hook — see "Commands" above.
@@ -126,17 +133,19 @@ Nothing deploys from a laptop:
 One-time setup in the dashboard (Workers & Pages → iuma → Settings → Build →
 **Connect** a Git repository), then fill the build configuration in:
 
-| Field             | Value                                |
-| ----------------- | ------------------------------------ |
-| Git repository    | `iumalabs/slangbot`                  |
-| Production branch | `main`                               |
-| Build command     | `npx -y deno task build`             |
-| Deploy command    | `npx -y deno task deploy:production` |
-| Version command   | `npx -y deno task deploy:preview`    |
-| Root directory    | `/`                                  |
+| Field             | Value                             |
+| ----------------- | --------------------------------- |
+| Git repository    | `iumalabs/slangbot`               |
+| Production branch | `main`                            |
+| Build command     | `npx -y deno task build`          |
+| Deploy command    | `npx -y deno task deploy:preview` |
+| Version command   | `npx -y deno task deploy:preview` |
+| Root directory    | `/`                               |
 
-("Deploy command" runs on pushes to the production branch; "Version command"
-runs on every other branch and uploads a preview version instead.)
+Both "Deploy command" and "Version command" upload a version without activating
+it — that's deliberate (see above). "Deploy command" runs on pushes to the
+production branch, "Version command" on every other branch; they happen to be
+identical here.
 
 `deploy:preview` and `deploy:production` are ordinary tasks in `deno.json` —
 reused as-is by the dashboard, and available locally too (see the escape hatch
@@ -165,8 +174,13 @@ Notes:
 
 ### D1 migrations in this flow
 
-The production deploy command applies pending migrations **before** deploying
-(`d1 migrations apply … && wrangler deploy`). This is safe and automatic:
+The "Deploy to production" workflow's `deploy:production` task applies pending
+migrations **before** deploying (`d1 migrations apply … && wrangler deploy`).
+Since going live is now a manual step (see "Deploys" above), migrations no
+longer apply automatically on every push to `main` through Workers Builds — the
+"GitHub workflow backup" below (`migrate.yml`) is what still runs automatically
+on a push touching `migrations/**`, ahead of the next manual deploy. This is
+safe:
 
 - **Idempotent.** D1 records applied migrations in its `d1_migrations` table, so
   the command is a no-op on deploys that add no new migration files, and it
@@ -189,9 +203,11 @@ The production deploy command applies pending migrations **before** deploying
 - **GitHub workflow backup:** the "Apply D1 migrations" workflow
   (`.github/workflows/migrate.yml`) also applies pending migrations — it fires
   automatically when a push to `main` touches `migrations/**` and can be run
-  manually from the Actions tab. Because applying is idempotent, it coexists
-  safely with the deploy-command step; it needs a `CLOUDFLARE_API_TOKEN`
-  repository secret with the Account → D1 → Edit permission.
+  manually from the Actions tab, so a new migration is live in D1 even before
+  the next manual production deploy. Because applying is idempotent, it coexists
+  safely with the deploy workflow's own migration step; it needs a
+  `CLOUDFLARE_API_TOKEN` repository secret with the Account → D1 → Edit
+  permission (same secret the deploy workflow uses).
 
 ### Escape hatch: deploying from a local machine
 
@@ -320,9 +336,11 @@ admin panel is the intended trigger surface.
 Semver releases are automated by
 [release-please](https://github.com/googleapis/release-please)
 (`.github/workflows/release-please.yml`), Google's Conventional-Commits-driven
-release tool. It does **not** deploy anything — deploys are Workers Builds' job
-(see "Deploys" above) and already happen on every push to `main` regardless of
-releases; release-please only maintains version history.
+release tool. It does **not** deploy anything — release-please only maintains
+version history (CHANGELOG, tag, GitHub Release). Going live is the separate,
+manual "Deploy to production" workflow (see "Deploys" above); merging a release
+PR is typically _when_ you'd run it, not something that triggers it
+automatically.
 
 - Every commit message needs a
   [Conventional Commits](https://www.conventionalcommits.org/) prefix (`feat:`,
