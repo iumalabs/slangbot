@@ -29,7 +29,7 @@ permissions:
 
 jobs:
   analyze:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, general]
 
     steps:
       - uses: actions/checkout@v4
