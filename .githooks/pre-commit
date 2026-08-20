@@ -26,6 +26,9 @@ echo "pre-commit: AI isolation"
 deno task check:ai
 
 echo "pre-commit: tests"
-deno test -A
+deno task test:coverage
+
+echo "pre-commit: route/e2e coverage gate"
+deno task check:coverage
 
 echo "pre-commit: all checks passed"

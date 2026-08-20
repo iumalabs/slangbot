@@ -1,6 +1,5 @@
 /** OG image endpoint. Satori render, KV-cached 7 days. ZERO AI calls. */
 import { Hono } from "hono";
-import { ImageResponse } from "workers-og";
 import type { Env } from "../env.ts";
 import { getDayNumber, getTermBySlug } from "../lib/d1.ts";
 import { KV_KEYS } from "../lib/kv.ts";
@@ -16,6 +15,7 @@ const CACHE_HEADERS = {
 };
 
 async function renderOg(element: JSX.Element): Promise<ArrayBuffer> {
+  const { ImageResponse } = await import("workers-og");
   const res = new ImageResponse(element as never, { width: 1200, height: 630 });
   return await res.arrayBuffer();
 }

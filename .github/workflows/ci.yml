@@ -46,7 +46,10 @@ jobs:
           deno-version: v2.x
 
       - name: Run tests
-        run: deno test -A
+        run: deno task test:coverage
+
+      - name: Route/e2e coverage gate
+        run: deno task check:coverage
 
   # Client bundle builds, stays within the 60 KB gzip budget, and no
   # Workers AI call leaks onto a user-facing request path.

@@ -28,6 +28,7 @@ specifiers; no `package.json`, no npm/node/npx).
 | `deno task deploy:preview`                         | upload a Worker version (used by Workers Builds for non-production branches, and locally as an escape hatch)                                |
 | `deno task deploy:production`                      | apply D1 migrations + deploy to slangbot.maksimyugai.com (used by Workers Builds for the production branch, and locally as an escape hatch) |
 | `deno task test`                                   | full test suite (`deno test -A`)                                                                                                            |
+| `deno task check:coverage`                         | route/e2e coverage gate — every `src/routes/` handler must be exercised (run after `deno task test:coverage`)                               |
 | `deno task lint`                                   | `deno lint` + `deno fmt --check`                                                                                                            |
 | `deno task db:migrate:local` / `db:migrate:remote` | apply D1 migrations                                                                                                                         |
 | `deno task seed`                                   | insert one demo term into the local D1                                                                                                      |
@@ -37,8 +38,8 @@ specifiers; no `package.json`, no npm/node/npx).
 **Pre-commit hook**: run `deno task hooks:install` once after cloning — it
 points `core.hooksPath` at the committed `.githooks/` directory, so every
 `git commit` runs the same gate as CI (fmt check, lint, typecheck, AI isolation,
-tests) plus a secret scan before the commit is created. Bypass in an emergency
-with `git commit --no-verify`.
+tests, route/e2e coverage) plus a secret scan before the commit is created.
+Bypass in an emergency with `git commit --no-verify`.
 
 **Secret scanning (gitleaks) is local-only, not in CI**: the `gitleaks-action`
 GitHub App requires a paid plan for organizations, so instead the pre-commit

@@ -222,7 +222,44 @@ export class FakeKV {
   }
 }
 
-export function makeEnv(db: FakeD1, kv: FakeKV): Env {
+/** Fake R2 bucket backing IMAGES: enough for the /img/* route and Telegram photo lookups. */
+export class FakeR2 {
+  store = new Map<string, { body: ArrayBuffer; contentType?: string }>();
+
+  put(
+    key: string,
+    value: ArrayBuffer,
+    opts?: { httpMetadata?: { contentType?: string } },
+  ): Promise<void> {
+    this.store.set(key, {
+      body: value,
+      contentType: opts?.httpMetadata?.contentType,
+    });
+    return Promise.resolve();
+  }
+
+  get(key: string): Promise<
+    {
+      body: ArrayBuffer;
+      httpEtag: string;
+      httpMetadata?: { contentType?: string };
+    } | null
+  > {
+    const v = this.store.get(key);
+    if (!v) return Promise.resolve(null);
+    return Promise.resolve({
+      body: v.body,
+      httpEtag: `"fake-etag-${key}"`,
+      httpMetadata: { contentType: v.contentType },
+    });
+  }
+}
+
+export function makeEnv(
+  db: FakeD1,
+  kv: FakeKV,
+  overrides: Partial<Env> = {},
+): Env {
   return {
     AI: {
       run() {
@@ -233,11 +270,12 @@ export function makeEnv(db: FakeD1, kv: FakeKV): Env {
     } as unknown as Ai,
     DB: db as unknown as D1Database,
     KV: kv as unknown as KVNamespace,
-    IMAGES: {} as R2Bucket,
+    IMAGES: new FakeR2() as unknown as R2Bucket,
     TURNSTILE_SITE_KEY: "1x00000000000000000000AA",
     ACCESS_TEAM_DOMAIN: "test.cloudflareaccess.com",
     TURNSTILE_SECRET: "1x0000000000000000000000000000000AA",
     COOKIE_HMAC_SECRET: TEST_SECRET,
     ADMIN_ACCESS_AUD: "test-aud",
+    ...overrides,
   };
 }
