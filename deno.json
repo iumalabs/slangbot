@@ -38,7 +38,7 @@
     "lib": ["deno.ns", "dom", "dom.iterable", "esnext"]
   },
   "fmt": {
-    "exclude": ["assets/client.js", "migrations/"]
+    "exclude": ["assets/client.js", "migrations/", "CHANGELOG.md"]
   },
   "lint": {
     "exclude": ["assets/client.js"],
