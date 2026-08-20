@@ -36,10 +36,12 @@ release-please reads these to compute the next semver bump, see README →
 
 ## Deploys
 
-No local deploys by default: pushes to non-`main` branches get preview versions
-via Workers Builds; production ships only by merging to `main` (see README →
-"Deploys"). `deno task deploy:preview` / `deploy:production` exist as documented
-escape hatches.
+No local deploys by default: every push (`main` included) only builds and
+uploads a version via Workers Builds — production traffic never switches on its
+own. Going live is the manual "Deploy to production" GitHub Actions workflow
+(`workflow_dispatch`), run by hand after merging a release-please release PR
+(see README → "Deploys"). `deno task deploy:preview` / `deploy:production` exist
+as documented escape hatches.
 
 ## Quality gate
 
