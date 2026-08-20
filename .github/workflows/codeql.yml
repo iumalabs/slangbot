@@ -1,11 +1,15 @@
 # Static security analysis (CodeQL) for the TypeScript/JavaScript codebase.
 #
-# This repo is private on a personal plan, where uploading results to the
-# GitHub Code Scanning service is unavailable (it needs paid Code Security).
-# So instead of uploading, the job inspects the SARIF output itself and
-# fails when CodeQL reports any finding. If the repo ever goes public,
-# switch `upload: never` off and add `security-events: write` back to get
-# the Security-tab experience.
+# Uploading results to the GitHub Code Scanning service needs paid Code
+# Security on this account's plan, so instead the job inspects the SARIF
+# output itself and fails when CodeQL reports any finding. Switch
+# `upload: never` off and add `security-events: write` back once Code
+# Security is available, to get the Security-tab experience.
+#
+# runs-on falls back to a GitHub-hosted runner for pull_request runs from a
+# fork (this repo is public): the self-hosted general-tier runner has
+# passwordless sudo and is shared with other repos, so a fork PR's code must
+# never execute there. Same-repo pushes/PRs still use it as normal.
 name: CodeQL
 
 on:
@@ -23,13 +27,13 @@ permissions:
   # written.
   actions: read
   # Read-only: lets the action query its API for feature flags. A residual
-  # "Code scanning is not enabled" notice may remain on this private repo —
-  # that part is not fixable without paid Code Security.
+  # "Code scanning is not enabled" notice may remain — that part is not
+  # fixable without paid Code Security.
   security-events: read
 
 jobs:
   analyze:
-    runs-on: [self-hosted, general]
+    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-latest' || fromJSON('["self-hosted", "general"]') }}
 
     steps:
       - uses: actions/checkout@v4
