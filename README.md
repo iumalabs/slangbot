@@ -20,18 +20,18 @@ specifiers; no `package.json`, no npm/node/npx).
 
 ## Commands
 
-| Task                                               | What it does                                                                                                                   |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `deno task dev`                                    | client-bundle watcher + `wrangler dev --test-scheduled`                                                                       |
-| `deno task build:client`                           | bundle `assets/client.js` (islands hydration)                                                                                 |
-| `deno task build`                                  | full build for Workers Builds (deno install + client)                                                                         |
-| `deno task deploy:preview`                         | upload a Worker version (used by Workers Builds for non-production branches, and locally as an escape hatch)                  |
+| Task                                               | What it does                                                                                                                         |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `deno task dev`                                    | client-bundle watcher + `wrangler dev --test-scheduled`                                                                              |
+| `deno task build:client`                           | bundle `assets/client.js` (islands hydration)                                                                                        |
+| `deno task build`                                  | full build for Workers Builds (deno install + client)                                                                                |
+| `deno task deploy:preview`                         | upload a Worker version (used by Workers Builds for non-production branches, and locally as an escape hatch)                         |
 | `deno task deploy:production`                      | apply D1 migrations + deploy to slangbot.iuma.dev (used by Workers Builds for the production branch, and locally as an escape hatch) |
-| `deno task test`                                   | full test suite (`deno test -A`)                                                                                              |
-| `deno task check:coverage`                         | route/e2e coverage gate — every `src/routes/` handler must be exercised (run after `deno task test:coverage`)                 |
-| `deno task lint`                                   | `deno lint` + `deno fmt --check`                                                                                              |
-| `deno task db:migrate:local` / `db:migrate:remote` | apply D1 migrations                                                                                                           |
-| `deno task seed`                                   | insert one demo term into the local D1                                                                                        |
+| `deno task test`                                   | full test suite (`deno test -A`)                                                                                                     |
+| `deno task check:coverage`                         | route/e2e coverage gate — every `src/routes/` handler must be exercised (run after `deno task test:coverage`)                        |
+| `deno task lint`                                   | `deno lint` + `deno fmt --check`                                                                                                     |
+| `deno task db:migrate:local` / `db:migrate:remote` | apply D1 migrations                                                                                                                  |
+| `deno task seed`                                   | insert one demo term into the local D1                                                                                               |
 
 `deno fmt`, `deno lint`, and `deno task check` are all clean.
 
